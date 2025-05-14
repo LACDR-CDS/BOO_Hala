@@ -1,0 +1,504 @@
+---
+title: "BOO 2025"
+subtitle: "Script 1: Data exploration - Questions"
+date: "`r Sys.Date()`" 
+author:
+  Hala Saab
+output:
+  html_document:
+    code_download: true
+    theme: united
+    highlight: tango
+    df_print: paged
+    toc: true
+    number_sections: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+---
+
+***
+
+> In this script you will explore the project data, describing the variables and outlining the data structure. 
+
+***
+
+
+
+# Setup
+
+## Using this template
+
+For each of the steps in the BOO project, we have prepared an example script like this one. You can download the R markdown (.Rmd) file to make it easier to complete the steps.
+
+**Exercise 1: Download the .Rmd using the `Code` dropdown menu in the top right corner of this document, and load it into R Studio.**
+
+
+
+***
+
+## Clean
+
+It is good practice to clean your environment at the start of every script. That way all the objects you need for the analysis are loaded within the code, and the R markdown document will knit without issues. 
+
+**Exercise 2: Remove all current objects from the R environment:**
+
+<details>
+  <summary><strong>Hint</strong></summary>
+
+  `ls()` is a function that returns the names of all objects currently loaded into the session.
+
+</details>
+
+```{r clean}
+# returns the names of all objects currently loaded into the session
+ls()
+```
+
+***
+
+## Load packages
+
+In R, different packages can have functions with the same name. Later loaded packages can therefore mask functions from earlier loaded ones. To avoid confusion when rerunning chunks within a script, we advise loading all required packages at the start. 
+
+As you learned in the DataCamp course, `tidyverse` is a group of packages which includes many basic functions for data wrangling and visualization in R.
+
+**Exercise 3: Load the `tidyverse` package into your environment:**
+
+```{r load-packages}
+# Load the `tidyverse` package
+library(tidyverse)
+
+```
+
+You can see from the reported message that loading `tidyverse` masks base R functions, `filter()` and `lag()`. If it is the case that a function you want to use is masked, you can always specify the package you intend to draw from explicitly using the `::` operator (e.g. `stats::filter()`).
+
+***
+
+## Set variables
+
+Setting variables that you will use repeatedly in a script can save time if you need to make changes later. This can include paths to folders where you store files or QC thresholds, for example.
+
+**Exercise 4: Create the following objects in your R environment:**
+
+* `root_dir` - your project folder
+* `count_path` - location of the count data
+* `metadata_path` - location of the metadata (sample information)
+
+```{r set-variables}
+# Setting variables that I will use
+# `root_dir` is not needed because i am working in project
+data.table::fread("input/countData.txt", sep = "\t")
+countData <- data.table::fread("input/countData.txt", sep = "\t")
+data.table::fread("input/metaData.txt", sep = "\t")
+metaData <- data.table::fread("input/metaData.txt", sep = "\t")
+
+```
+
+***
+
+## Load data
+
+**Exercise 5: Load the project data into your R environment:**
+
+<details>
+  <summary><strong>Hint</strong></summary>
+
+  Use the `read_tsv()` function.
+
+</details>
+
+`countData`
+
+* should contain one column `Probe` containing the probe names
+* the rest of the columns should represent samples with values containing counts for that particular samples
+* this object should have one row for each probe measured by the TempO-Seq
+
+`metaData`
+
+* should have a row for each of the sample columns in `countData`
+* should have variables describing the samples in your data
+
+```{r load-data}
+# Load the project
+countData <- read_tsv("input/countData.txt")
+metaData <- read_tsv("input/metaData.txt")
+
+```
+
+***
+
+# Metadata
+
+The `metaData` object contains information on the individual samples in the data.
+
+**Exercise 6: Briefly describe each of the variables in `metaData`:**
+
+```{r metadata}
+# describe the the variables
+colnames(metaData)
+#It gives you a character vector where each element is a column name (also referred to as a variable name) from my metaData data frame
+head(metaData)
+# it's showing my rows and columns of my metaData
+```
+sample_ID: gives sample ID corresponding to samples in countData. 
+sample_type: is the a sample treated with chemicals, or a control sample
+compound_ID: mentions the compound or DMSO level sample was treated with
+compound_CAS: CAS code for compound used
+compound_name: name of compound used
+compound_abbr: abbreviated compound name
+mean_ID: compound_concentration_plate
+mean_ID_control: mean_ID of the control conditions used for this sample; NA for control sample rows
+control_type: indicates if a low or high level of DMSO was used in the control; NA for control sample rows
+conc_ID: indicates concentration level of the chemicals.
+conc_amt: indicates concentration of the chemicals in the sample
+conc_unit: unit for conc_amt
+conc_max: maximum concentration used
+conc_min: minimum concentration used
+rep: indicates repetition  
+lib_size: library size, often referring to the total number of sequencing reads or counts obtained for that sample.
+read_depth: A measure related to sequencing depth, possibly normalized or calculated differently from lib_size
+plate_ID: which plate the sample was on
+plate_well: which well the sample was in
+plate_row: which row the sample was in
+plate_col: which column the sample was in
+batch:  Identifier for the experimental batch, if the experiment was processed in multiple batches. Your snippets show 1 or NA.
+timepoint: time at which data was gathered
+cell_type: cell type
+compound_class: high or low tox
+LOAEL_amt and LOAEL unit: LOAEL from animal studies and unit
+PBPK_equivalent: A dose or concentration equivalent derived from Physiologically Based Pharmacokinetic (PBPK) modeling. NA for controls.
+PBPK_serum_level: The predicted serum level from a PBPK model, possibly corresponding to an external dose. NA for controls.
+***
+
+**Exercise 7: What test system is this data profiled from? Give a brief description.**
+
+<details>
+  <summary><strong>Hint</strong></summary>
+
+  Try looking at the `cell_type` variable.
+
+</details>
+
+```{r test-system}
+# See unique values in the cell_type column
+unique(metaData$cell_type)
+# PHH or  Primary Human Hepatocytes cell type were used
+```
+
+***
+
+**Exercise 8: How many treatment and control samples are there in the project data?**
+
+```{r sample-type}
+#  Count the number of samples for each category in the 'sample_type' column
+sample_type_counts <- dplyr::count(metaData, sample_type)
+
+# Print the resulting table of counts
+print(sample_type_counts)
+# there is 18 control and 42 treatment
+
+```
+
+***
+
+**Exercise 9: Describe the range of experimental conditions which the samples have been exposed to:**
+
+<details>
+  <summary><strong>Hint</strong></summary>
+
+  Don't forget to describe the compounds and the concentration ranges.
+
+</details>
+
+```{r experimental-conditions}
+#the range of experimental conditions which the samples have been exposed to
+metaData %>%
+ select(compound_name, compound_ID, conc_amt, conc_unit, conc_ID, compound_class)%>%
+ distinct() # remove the duplicates.
+
+
+```
+
+***
+
+**Exercise 10: How many replicates are there for each experimental condition?**
+
+```{r replicate-number}
+metaData %>%
+  dplyr::count(
+    mean_ID, # This is the primary identifier for an experimental condition
+    sample_type,compound_name , compound_abbr, conc_amt, conc_unit,
+    control_type, # This will mostly be relevant for control samples
+    name = "number_of_replicates", # Name of the new column with counts
+    sort = FALSE 
+  ) %>%
+  dplyr::arrange(sample_type, compound_name, conc_amt)
+```
+The different control conditions each have 6 replicates. All tested concentrations for the treatment compounds (Diisopropanolamine and L-Tyrosine) each have 3 replicates.
+
+
+
+***
+
+**Exercise 11: Are the compounds on different plates? If so, how might this affect the analysis and results? Has the experimental design been adjusted to compensate for this?** 
+
+```{r plates}
+# Show which plates each treatment compound is found on
+metaData %>%
+  filter(sample_type == "Treatment") %>% # Focus on treatment samples
+  group_by(compound_name) %>%
+  summarise(
+    plates_used_list = paste(sort(unique(plate_ID)), collapse = ", "),
+    number_of_distinct_plates = n_distinct(plate_ID), # Count how many distinct plates this compound is on
+    .groups = 'drop'
+  ) %>%
+  arrange(compound_name)
+```
+Yes, different compounds are on different plates. Diisopropanolamine is on P1, while L-Tyrosine is on P6. and Yes, this affect the analysis and results because of Increased Variance: Plate-to-plate variability can add noise or variance to your overall dataset if not accounted for, Comparability: Direct comparison of the absolute effects of Diisopropanolamine (on P1) with L-Tyrosine (on P6) becomes more challenging. You'd be less confident that observed differences are solely due to the compounds and Plate Effects.
+
+```{r}
+# --- Further Exercise 11: Compensation ---
+
+metaData %>%
+  filter(sample_type == "Control") %>%
+  distinct(control_type, plate_ID, compound_name) %>% # See what 'compound' controls are too
+  arrange(plate_ID, control_type)
+
+```
+Now, this new output shows:
+
+Plate P1 (which has Diisopropanolamine) also has DMSO controls.
+Plate P6 (which has L-Tyrosine) also has Medium controls. This is evidence that the experimental design has been adjusted to compensate for compounds being on different plates.
+
+***
+
+** 12: Why do some samples not have data on their toxicity class?**
+
+<details>
+  <summary><strong>Hint</strong></summary>
+
+  You can filter data using the `is.na()` function.
+
+</details>
+
+```{r na-class}
+# Identify and count samples where 'compound_class' is NA.
+metaData %>%
+  filter(is.na(compound_class)) %>%
+  dplyr::count(sample_type, compound_name, compound_ID, compound_abbr, control_type, 
+               name = "count_of_NA_class", sort = TRUE)
+
+```
+these samples are all control samples.
+ 
+***
+
+**Exercise 13: How many hours after exposure are the samples collected?**
+
+```{r timepoint}
+#  how many hours after exposure the samples were collected.
+unique(metaData$timepoint)
+
+```
+after 24 hours
+***
+
+**Exercise 14: Check that each sample has a unique identifier:**
+
+```{r unique-id}
+# 
+dplyr::n_distinct(metaData$sample_ID)
+nrow(metaData)
+```
+This means there are 60 unique sample_ID and the total number of rows is also 60, then every sample_ID is unique.
+***
+
+# Count data
+
+The count data has information on raw counts from the probes measured during TempO-Seq (rows) in each of the samples (columns)
+
+Many of the functions we will use in this project assume that `countData` row names are the gene or probe names. 
+
+**Exercise 15: Change the variable `Probe` to the row names:**
+
+<details>
+  <summary><strong>Hint</strong></summary>
+
+  Use the `column_to_rownames()` function.
+
+</details>
+
+```{r column-rownames}
+# Change the variable `Probe` to the row names
+if ("Probe" %in% colnames(countData)) {
+ countData <- tibble::column_to_rownames(countData, var = "Probe")
+ cat("Action: Successfully moved the 'Probe' column to be the row names of 'countData'.\n\n")
+} else {
+  cat("Action skipped: 'Probe' column was not found in 'countData'.\n")
+}
+```
+
+***
+
+**Exercise 16: Which column in the metadata can be used to subset the count data? Use it to select only counts from the control samples:**
+
+<details>
+  <summary><strong>Hint</strong></summary>
+
+  Make sure you don't replace `countData` with only control samples when answering this question! :)
+
+</details>
+
+```{r subset-controls}
+# Get the sample_IDs for all control samples
+
+control_sample_ids <- metaData %>%
+  filter(sample_type == "Control") %>%
+  pull(sample_ID)
+print (control_sample_ids)
+```
+
+```{r}
+# Step 2: Use these sample_IDs to select the corresponding columns from countData and Create a new data frame containing only the identifier column and the control sample columns.
+
+colnames(countData)[1] # This line correctly identifies "Probe" as the first column name
+ countData %>%
+  select(all_of(colnames(countData)[1]), all_of(control_sample_ids))
+```
+the sample_type column in metaData is used to filter for "Control" samples.
+
+***
+
+**Exercise 17: Check that the columns of the count data and rows of the metadata are in the same order.**
+
+<details>
+  <summary><strong>Hint</strong></summary>
+
+  The different functionalities of `==` and `%in%` may help here.
+
+</details>
+
+```{r check-order}
+# 1. Get sample IDs from countData column headers and Get sample IDs from metaData rows and Perform checks
+countData_sample_ids <- colnames(countData)[-1]
+metaData_sample_ids <- metaData$sample_ID
+
+are_in_same_order <- all(countData_sample_ids == metaData_sample_ids)
+print (are_in_same_order)
+
+```
+
+
+***
+
+# Advanced question
+
+This question provides a bit of a (hopefully fun) challenge, but you can also skip it, save your data, and move on to the probe QC if you prefer.
+
+**Exercise 18: Make a plot of the plate layout using `ggplot`?**
+
+<details>
+  <summary><strong>Hint</strong></summary>
+
+  Use `geom_tile()`
+
+</details>
+
+```{r plate-layout}
+# Prepare data for plotting
+plot_data_for_layout <- metaData %>%
+  mutate(
+    plate_row_ordered = factor(plate_row, levels = rev(sort(unique(metaData$plate_row))))
+  ) %>% 
+  mutate(
+    well_content = case_when(
+      sample_type == "Treatment" & !is.na(compound_abbr) & compound_abbr != "" ~ compound_abbr,
+      sample_type == "Treatment" ~ compound_name, # Fallback if compound_abbr is NA or empty
+      sample_type == "Control" & !is.na(control_type) & control_type != "" ~ control_type,
+      sample_type == "Control" ~ compound_name,   # Fallback if control_type is NA or empty (e.g. "DMSO")
+      TRUE ~ "Other" # For any other cases
+    )
+  )
+
+# Determine the range of columns for x-axis breaks
+plate_col_breaks <- sort(unique(plot_data_for_layout$plate_col))
+
+# 2. Create the plate layout plot using ggplot2
+plate_layout_visualization <- ggplot(plot_data_for_layout, 
+                                   aes(x = plate_col, y = plate_row_ordered, fill = well_content)) +
+  geom_tile(color = "grey60", linewidth = 0.25) + 
+  facet_wrap(~ plate_ID, ncol = 1) + 
+  
+  scale_x_continuous(breaks = plate_col_breaks, labels = plate_col_breaks, expand = c(0,0)) +
+  # y-axis is already ordered by 'plate_row_ordered' factor levels
+  
+  labs(
+    title = "Experimental Plate Layout",
+    subtitle = paste("Wells colored by content (e.g., Compound Abbreviation or Control Type). Total plates:", n_distinct(plot_data_for_layout$plate_ID)),
+    x = "Plate Column",
+    y = "Plate Row",
+    fill = "Well Content:" 
+  ) +
+  theme_minimal(base_size = 10) + # A clean theme
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
+    plot.subtitle = element_text(hjust = 0.5, size = 10),
+    axis.text = element_text(size = 8), 
+    axis.title = element_text(size = 10, face = "bold"),
+    strip.text = element_text(face = "bold", size = 11), 
+    legend.position = "bottom", 
+    legend.title = element_text(face="bold"),
+    panel.spacing = unit(1.5, "lines")
+  ) +
+  coord_equal()
+
+# Display the plot
+print(plate_layout_visualization)
+```
+
+***
+
+# Save
+
+Make sure you save any changed objects at the end of your script for downstream analysis.
+
+**Exercise 19: Save your `countData` and `metaData` as `.Rdata` objects**
+
+<details>
+  <summary><strong>Hint</strong></summary>
+
+  Don't forget to use `root_dir`, so if you ever move your project your code can be easily updated.
+
+</details>
+
+```{r save-data}
+# 
+save(countData, file = "Output/countData.Rdata")
+save(metaData, file = "Output/metaData.Rdata")
+```
+
+***
+
+# Session Info
+
+Printing `session_info()` at the bottom of your scripts ensures your work is reproducible. It does this by keeping a record of the package versions used and the environment. 
+
+**Exercise 20: Print your session info here:**
+
+```{r session-info}
+library(sessioninfo)
+session_info()
+
+```
+
+***
+
+**Exercise 21: Knit this script to produce either a `PDF` or `HTML`file and push it to your GitHub repository.**
+
+That is the end of the Data Exploration. Example answers will be available from the `BOO_template` GitHub on Tuesday. 
+
+Next, please move on to the probe QC using `02_ProbeQC_Outline.Rmd`.
+
+***
+
