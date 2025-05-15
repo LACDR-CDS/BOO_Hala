@@ -1,0 +1,687 @@
+---
+title: "BOO 2025 - Example Analysis"
+subtitle: "Script 3: Sample QC - Questions"
+date: "`r Sys.Date()`" 
+author: 
+ Hala Saab
+output:
+  html_document:
+    code_download: true
+    theme: united
+    highlight: tango
+    df_print: paged
+    toc: true
+    number_sections: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+---
+
+***
+
+> In this script, you will perform sample-level quality control (QC), removing any poor quality samples and ensuring that experimental replicates are comparable to one another. 
+
+***
+
+# Setup
+
+## Clean
+
+As before, we perform several setup steps at the start of the script to ensure our work is reproducible and clear. 
+
+**Exercise 1: Download the R markdown template and clean your environment:**
+
+```{r clean}
+# clean
+ rm(list = ls())
+
+```
+
+***
+
+## Set variables
+
+**Exercise 2: Create the following objects in your R environment:**
+
+* `root_dir` - project folder
+* `count_path` - location of the `countData` object within the project folder
+* `cpm_path` - location of the `cpmData` object
+* `metadata_path` - location of the `metaData` object
+
+* `count_store` - location to save the `countData` object within the project folder
+* `cpm_store` - location to save the `cpmData` object
+* `metadata_store` - location to save the filtered `metaData` after QC
+
+* `count_threshold` - minimum library size required for samples (600,000; 20% of the target sequencing depth)
+* `corr_threshold` - required correlation between replicates (0.9)
+
+```{r set-variables}
+#
+
+count_path <- file.path("output/qc_countData.RData") 
+cpm_path <- file.path("output/cpm_data.RData")      
+metadata_path <- file.path("output/processed_metaData.RData") 
+
+output_dir_script3 <- "output"
+if (!dir.exists(output_dir_script3)) {
+  dir.create(output_dir_script3)
+  cat("Created directory:", output_dir_script3, "\n")
+}
+
+count_store <- file.path(output_dir_script3, "sampleQC_countData.RData")
+cpm_store <- file.path(output_dir_script3, "sampleQC_cpmData.RData")
+metadata_store <- file.path(output_dir_script3, "sampleQC_metaData.RData")
+
+count_threshold <- 600000 # Minimum library size
+corr_threshold <- 0.9     # Minimum replicate correlation
+
+```
+
+***
+
+## Packages
+
+Here, we load `tidyverse` and also a new package:
+
+* `ggrepel` allows us labels in plots to "repel" each other and make visualizations clearer
+
+**Exercise 3: Load `tidyverse` and `ggrepel` into your environment:**
+
+```{r load-packages, warning=F, message=F}
+# Load packages
+library(tidyverse)
+library(ggrepel) # For repelling text labels in ggplot
+```
+
+***
+
+## Load data
+
+**Exercise 4: Load the count data, CPM data, and metadata into your environment:**
+
+<details>
+  <summary><strong>Hint</strong></summary>
+
+  Make sure these are the ones your saved at the end of the probe QC.
+
+</details>
+
+```{r load-data, warning=FALSE, message=FALSE}
+# Load data saved from Script 2
+
+path_to_cpmData <- "output/cpm_data.RData"
+load("C:/Users/hala2/Universiteit Leiden/BOO 2025 - BOO CDS Giulia team - BOO CDS Giulia team/Students/Hala/Project/Hala-BOO/output/cpm_data.RData")
+
+load("C:/Users/hala2/Universiteit Leiden/BOO 2025 - BOO CDS Giulia team - BOO CDS Giulia team/Students/Hala/Project/Hala-BOO/output/countData.Rdata")
+
+
+load("C:/Users/hala2/Universiteit Leiden/BOO 2025 - BOO CDS Giulia team - BOO CDS Giulia team/Students/Hala/Project/Hala-BOO/output/metaData.Rdata")
+
+```
+
+***
+
+# Library size
+
+## Check
+
+Before applying any filters, it is good to perform some checks.
+
+**Exercise 5: Check that the column names of `countData` match the `sample_ID` order in `metaData`:**
+
+```{r order-check}
+#1. Get sample identifiers from the column names of countData.
+countData_sample_colnames <- colnames(countData)
+
+# 2. Get sample identifiers from the 'sample_ID' column of metaData.
+metaData_sample_ids <- metaData$sample_ID
+
+are_identical_and_in_order <- all(countData_sample_colnames == metaData_sample_ids)
+
+print (are_identical_and_in_order)
+
+# Yes, there are identical
+```
+
+***
+
+## Calculate
+
+**Exercise 6: Now that we have removed unreliable and lowly expressed probes from `countData`, recalculate and save a new `lib_size` in the metadata:**
+
+```{r calculate-lib}
+# Calculate new library sizes from the current (probe-QC'd) countData
+recalculated_library_sizes <- colSums(countData)
+
+
+#Create a data frame from these new library sizes for merging.
+new_lib_size_df <- data.frame(
+  sample_ID = names(recalculated_library_sizes),
+  lib_size_recalculated = recalculated_library_sizes,
+  row.names = NULL # Ensure default row names for this temporary df
+)
+# 3. Merge the new library sizes into 'metaData'.
+if ("lib_size" %in% colnames(metaData)) {
+  metaData <- metaData %>% select(-lib_size)
+  cat("Removed existing 'lib_size' column from 'metaData'.\n")
+}
+
+metaData <- metaData %>% 
+  select(-any_of(c("lib_size_recalculated", "lib_size.x", "lib_size.y")))
+
+metaData <- metaData %>%
+  left_join(new_lib_size_df, by = "sample_ID") %>%
+  rename(lib_size = lib_size_recalculated)
+
+print(head(metaData %>% select(sample_ID, lib_size, any_of(c("low_reads_flag", "low_corr_flag")))))
+
+#lib_size: This column now contains the newly recalculated library sizes. These values were derived by summing up all the counts for each sample in your current countData object
+```
+
+***
+
+## Distribution
+
+**Exercise 7: Make a histogram of `lib_size`. What range of values does this variable take and is this reasonable for a TempO-Seq experiment?**
+
+```{r lib-histogram}
+
+print(summary(metaData$lib_size))
+
+lib_size_histogram <- ggplot(metaData, aes(x = lib_size)) +
+  geom_histogram(
+    binwidth = 200000, 
+    fill = "steelblue", 
+    color = "black",    
+    alpha = 0.7       
+  ) +
+  scale_x_continuous(
+    labels = scales::comma,
+    n.breaks = 8         
+  ) + 
+  scale_y_continuous(expand = expansion(mult = c(0, 0.05))) + 
+  labs(
+    title = "Distribution of Sample Library Sizes (after Probe QC)",
+    x = "Library Size (Total Counts per Sample)",
+    y = "Number of Samples (Frequency)"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold")
+  )
+print(lib_size_histogram)
+
+#The distribution appears roughly unimodal, with the main peak centered around 3.5 to 4.0 million reads. This aligns well with your calculated median (~3.66M) and mean (~3.64M).
+#Based on mu summary statistics, the library sizes range from a minimum of 1,255,337 to a maximum of 5,244,421. The histogram visually confirms this spread, with bars covering this range.
+#Yes, this range and distribution are generally reasonable and look quite good for a TempO-Seq experiment.Sufficient Depth, Above Minimum Thresholds and No Extreme Outliers.
+```
+
+***
+
+## Flag
+
+Samples whose library size is below 20% of the targeted sequencing depth (`corr_threshold`; 600,000) should be flagged as having low reads.
+
+**Exercise 8: Create a flag in `metaData` describing if samples have low reads or not:**
+
+```{r lib-flag}
+# 1. Create the 'low_reads_flag' in metaData.
+if ("low_reads_flag" %in% colnames(metaData)) {
+  metaData <- metaData %>% select(-low_reads_flag)
+}
+metaData <- metaData %>% 
+  select(-any_of(c("low_reads_flag.x", "low_reads_flag.y")))
+
+metaData <- metaData %>%
+  mutate(
+    low_reads_flag = ifelse(lib_size < count_threshold, TRUE, FALSE)
+  )
+# 2. Display a summary of the new flag.
+print(table(metaData$low_reads_flag, useNA = "ifany"))
+
+#This output means that all 60 samples in your metaData have a low_reads_flag of FALSE. Therefore, no samples were flagged as having low reads because all of them had a library size greater than or equal to the 600,000 count threshold.
+```
+
+***
+
+## Plot
+
+It is good to visualize the library size for each sample, grouped by compound ID. This shows us whether samples are well above the threshold, and allows us to inspect the data more carefully.
+
+**Exercise 9: Create a boxplot for the library sizes of each compound (including DMSO) and describe any patterns you identify:**
+
+<details>
+  <summary><strong>Hint</strong></summary>
+
+  You can colour your boxplots by concentration to visualize patterns more clearly.
+
+</details>
+
+```{r lib-boxplot}
+
+
+plot_data_boxplot <- metaData %>%
+  mutate(
+    conc_factor = factor(conc_amt), # Treat concentration as a categorical variable for fill
+    low_reads_flag = factor(low_reads_flag, levels = c(TRUE, FALSE), labels = c("Low Reads", "OK Reads"))
+  )
+
+cat("Prepared 'plot_data_boxplot' for plotting.\n")
+cat("Summary of 'low_reads_flag' factor levels in plot_data_boxplot:\n")
+print(table(plot_data_boxplot$low_reads_flag, useNA = "ifany"))
+cat("\n")
+
+# Create the boxplot
+lib_size_boxplot <- ggplot(plot_data_boxplot, aes(x = compound_name, y = lib_size)) +
+  geom_boxplot(
+    aes(fill = conc_factor), 
+    outlier.shape = NA, # We'll use jitter to show all points, so hide default boxplot outliers
+    alpha = 0.7,        # Transparency for the box fill
+    notch = FALSE       # Optional: set to TRUE for notched boxplots
+  ) +
+  geom_jitter(
+    aes(color = low_reads_flag), 
+    width = 0.25,       # Amount of horizontal jitter
+    alpha = 0.8,        # Transparency of points
+    size = 2            # Size of points
+  ) +
+  geom_hline(
+    yintercept = count_threshold, 
+    linetype = "dashed", 
+    color = "red", 
+    linewidth = 1
+  ) +
+  annotate(
+    "text", 
+    x = Inf, # Position to the far right
+    y = count_threshold, 
+    label = paste("Threshold =", scales::comma(count_threshold)), 
+    hjust = 1.05, # Adjust to be just right of the plot edge
+    vjust = -0.5, # Adjust to be slightly above the line
+    color = "red", 
+    size = 3.5
+  ) +
+  scale_y_continuous(labels = scales::comma) + # Format y-axis with commas
+  scale_fill_viridis_d(option = "D", name = "Concentration Amount") + # Colorblind-friendly discrete palette for fill
+  scale_color_manual(
+    name = "Library Size Status",
+    values = c("Low Reads" = "orange", "OK Reads" = "black"), # Colors for jitter points
+    drop = FALSE # Ensures all legend items appear even if no data for one
+  ) +
+  labs(
+    title = "Library Size Distribution by Compound",
+    subtitle = "Points show individual samples, colored by library size status relative to threshold.",
+    x = "Compound Name",
+    y = "Library Size (Total Counts per Sample)"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    plot.subtitle = element_text(hjust = 0.5, size = 10),
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 10), # Angle x-axis labels
+    legend.position = "top"
+  )
+
+
+print(lib_size_boxplot)
+
+
+
+
+
+# Controls (DMSO, Medium): Show consistent and high library sizes, indicating good quality.
+#Diisopropanolamine: Library sizes are fairly consistent across its different concentrations.
+#L-Tyrosine: Shows more variability in library sizes across its concentrations compared to other groups.
+#Overall: No obvious trend of library size changing systematically with drug concentration is visible. The data generally indicates robust sequencing depth across all samples.
+
+
+```
+
+
+***
+
+# Replicate correlation
+
+## log2CPM
+
+The replicate correlation filter aims to remove any outlying replicates, with maximum pairwise correlations below the `corr_threshold` (set to 0.9). We usually perform this correlation analysis on the log2CPM values to ensure highly expressed genes do not have undue influence on the correlation values. A value of 1 is added to the CPM, to prevent issues arising from the fact that `log2(0)` is `-Inf`. 
+
+**Exercise 10: Calculate and store the log2(CPM + 1) values in a `logcpmData` object:**
+
+```{r log2cpm}
+#Calculate log2(CPM + 1)
+logcpmData <- log2(cpmData + 1)
+
+```
+
+***
+
+## Pairwise correlations
+
+In order to calculate pairwise correlations, each sample needs to be compared to the other replicates in its experimental group. We can do this by looping through `mean_ID`.
+
+**Exercise 11: Calculate the pairwise replicate correlations for this data:**
+
+<details>
+  <summary><strong>Hint</strong></summary>
+
+  The correlation can be calculated using `cor(cpmDataReps[,j], cpmDataReps[,k])` within an appropriate loop.
+
+</details>
+
+```{r pairwise-corr}
+
+# Display the head of the new logcpmData object.
+if (nrow(logcpmData) > 0 && ncol(logcpmData) > 0) {
+  print(head(logcpmData[, 1:min(5, ncol(logcpmData))]))
+}
+
+```
+
+***
+
+## Maximum
+
+Each sample is judged by the best pairwise correlation it can achieve. If this is below `corr_threshold`, the sample should be flagged.
+
+**Exercise 12: Calculate the `max_r2` for each sample and add it to the `replicateFilterOutput`:**
+
+```{r max-r2}
+#Get unique experimental conditions (mean_IDs) and Initialize a list to store the max_r2 for each sample
+unique_mean_ids <- unique(metaData$mean_ID)
+sample_max_correlations_list <- list()
+
+# 3. Loop through each unique experimental condition (mean_ID)
+
+for (current_mean_id in unique_mean_ids) {
+  sample_ids_in_group <- metaData %>%
+    filter(mean_ID == current_mean_id) %>%
+    pull(sample_ID)
+  
+  if (length(sample_ids_in_group) > 1) {
+    valid_samples_in_group <- intersect(sample_ids_in_group, colnames(logcpmData))
+    
+    if (length(valid_samples_in_group) < 2) {
+        for(sample_id_single in sample_ids_in_group){
+             sample_max_correlations_list[[sample_id_single]] <- NA_real_
+        }
+        next 
+    }
+      
+    logcpm_subset_for_group <- logcpmData[, valid_samples_in_group, drop = FALSE]
+    correlation_matrix <- cor(logcpm_subset_for_group, method = "pearson")
+    
+    for (sample_name in colnames(correlation_matrix)) {
+      correlations_with_others <- correlation_matrix[sample_name, colnames(correlation_matrix) != sample_name]
+      
+      if (length(correlations_with_others) > 0) {
+        sample_max_correlations_list[[sample_name]] <- max(correlations_with_others, na.rm = TRUE)
+      } else {
+        sample_max_correlations_list[[sample_name]] <- NA_real_ 
+      }
+    }
+  } else {
+    if (length(sample_ids_in_group) == 1) {
+      sample_max_correlations_list[[sample_ids_in_group[1]]] <- NA_real_
+    }
+  }
+}
+
+#  Convert the list of max correlations into a data frame
+replicateFilterOutput <- data.frame(
+  sample_ID = names(sample_max_correlations_list),
+  max_r2 = unlist(sample_max_correlations_list),
+  row.names = NULL 
+)
+
+if (nrow(replicateFilterOutput) > 0) {
+  print(head(replicateFilterOutput))
+}
+
+#max_r2 (<dbl> for double/numeric):
+
+#This column shows the maximum Pearson correlation coefficient (r) that a given sample achieved when compared pairwise against all other replicates within its specific experimental group
+
+#Values close to 1 indicate very high correlation 
+
+#The output you're seeing shows that the first 6 samples listed all have very high max_r2 values (all > 0.98), which is excellent and suggests these replicates are highly similar to at least one other replicate in their respective groups.
+```
+
+***
+
+## Plot
+
+**Exercise 13: Visualize the pairwise replicate correlations for each experimental conditions. Describe what you observe:**
+
+```{r corr-boxplot}
+
+plot_data_for_corr_boxplot <- metaData %>%
+  left_join(replicateFilterOutput, by = "sample_ID") %>%
+  filter(!is.na(max_r2)) 
+
+if (nrow(plot_data_for_corr_boxplot) > 0) {
+  correlation_boxplot <- ggplot(plot_data_for_corr_boxplot, aes(x = mean_ID, y = max_r2)) +
+    geom_boxplot(
+      aes(fill = sample_type), 
+      outlier.shape = NA,      
+      alpha = 0.7,
+      notch = FALSE,
+      width = 0.9
+    ) +
+    geom_jitter(
+      aes(color = sample_type), 
+      width = 0.2,
+      alpha = 0.6,
+      size = 1.5
+    ) +
+    geom_hline(
+      yintercept = corr_threshold, 
+      linetype = "dashed", 
+      color = "red", 
+      linewidth = 1
+    ) +
+    annotate(
+      "text", 
+      x = -Inf, 
+      y = corr_threshold, 
+      label = paste("Corr. Threshold =", corr_threshold), 
+      hjust = -0.05, 
+      vjust = -0.5,  
+      color = "red", 
+      size = 3
+    ) +
+    scale_fill_brewer(palette = "Pastel1", name = "Sample Type:") + 
+    scale_color_brewer(palette = "Set1", name = "Sample Type:") +   
+    labs(
+      title = "Distribution of Maximum Pairwise Replicate Correlations (max_r2)",
+      subtitle = "Each point is a sample, showing its max correlation with other replicates in its group.",
+      x = "Experimental Condition (mean_ID)",
+      y = "Maximum Pairwise Correlation (max_r2)"
+    ) +
+    theme_minimal(base_size = 11) + 
+    theme(
+      plot.title = element_text(hjust = 0.5, face = "bold", size = 11),
+      plot.subtitle = element_text(hjust = 0.5, size = 9),
+      axis.text.x = element_text(angle = 60, hjust = 1, size = 7), 
+      axis.text.y = element_text(size = 8),
+      axis.title = element_text(size = 10, face = "bold"),
+      legend.title = element_text(size = 9, face = "bold"),
+      legend.text = element_text(size = 8),
+      legend.position = "top"
+    )
+
+  print(correlation_boxplot)
+}
+
+#The boxplot shows that replicate correlations (max_r2) are very high across almost all samples and conditions, with most values well above the 0.9 threshold (red dashed line). This indicates good reproducibility.
+
+#Controls (DMSOHigh_P1, DMSOLow_P1, Medium_P6) show tight, consistently high correlations.
+#Treatments (Diisopropanolamine and L-Tyrosine conditions) also show very good correlations, generally comparable to controls, with low variability within most groups.
+
+```
+
+***
+
+## Flag
+
+**Exercise 14: Flag any samples that did not pass the replicate correlation filter in the `metaData`:**
+
+<details>
+  <summary><strong>Hint</strong></summary>
+
+  You can merge the replicate correlation filter output with the metaData to create a `max_r2` column after some processing.
+
+</details>
+
+```{r corr-flag}
+if (!"max_r2" %in% colnames(metaData) && exists("replicateFilterOutput")) {
+  metaData <- metaData %>%
+    left_join(replicateFilterOutput, by = "sample_ID")
+}
+
+if ("low_corr_flag" %in% colnames(metaData)) {
+  metaData <- metaData %>% select(-low_corr_flag)
+}
+metaData <- metaData %>% 
+  select(-any_of(c("low_corr_flag.x", "low_corr_flag.y")))
+
+metaData <- metaData %>%
+  mutate(
+    low_corr_flag = ifelse(!is.na(max_r2) & max_r2 < corr_threshold, TRUE, FALSE)
+  )
+
+print(table(metaData$low_corr_flag, useNA = "ifany"))
+
+flagged_corr_samples <- metaData %>%
+  filter(low_corr_flag == TRUE) %>%
+  select(sample_ID, mean_ID, max_r2, low_corr_flag)
+
+if (nrow(flagged_corr_samples) > 0) {
+  print(head(flagged_corr_samples))
+}
+
+# This output indicates that all 60 samples in your dataset have a low_corr_flag of FALSE. This means that no samples were flagged as having a low replicate correlation based on your criterion (max_r2 < corr_threshold, where corr_threshold is 0.9).
+
+#This aligns with the visual interpretation of the boxplot from Exercise 13, where all samples appeared to have max_r2 values at or above the 0.9 threshold. It's a good sign, suggesting strong reproducibility among your replicates.
+```
+
+***
+
+# Advanced questions
+
+If you would like a bit more of a challenge, here are a few extra questions relating to the two sample QC steps above. However, you can also skip these, save your data, and move on to the PCA.
+
+## Library size
+
+**Exercise 14: What are the benefits of a sample having a higher library size and does this benefit apply to some genes more than others?**
+
+```{r read-depth}
+#
+
+```
+
+***
+
+## Replicate correlation
+
+Instead of looking at pairwise correlations, another way of measuring how good a replicate is is by comparing it to the average for that experimental condition. 
+
+**Exercise 15: Calculate replicate correlation in this way and see if it alters the results of this filter. What is one benefit and downside of assessing replicate correlation in this manner?**
+
+```{r mean-corr}
+#
+
+```
+
+***
+
+# Save
+
+**Exercise 16: Remove samples that did not pass the sample QC steps from your data:**
+
+<details>
+  <summary><strong>Hint</strong></summary>
+
+  Don't forget to also subset the count and CPM data.
+
+</details>
+
+```{r any-flag}
+samples_to_keep_ids <- metaData %>%
+  filter(
+    (is.na(low_reads_flag) | low_reads_flag == FALSE) &
+    (is.na(low_corr_flag) | low_corr_flag == FALSE)
+  ) %>%
+  pull(sample_ID)
+
+metaData_qc <- metaData %>%
+  filter(sample_ID %in% samples_to_keep_ids)
+
+valid_countData_cols_to_keep <- intersect(samples_to_keep_ids, colnames(countData))
+countData_qc <- countData[, valid_countData_cols_to_keep, drop = FALSE]
+
+valid_cpmData_cols_to_keep <- intersect(samples_to_keep_ids, colnames(cpmData))
+cpmData_qc <- cpmData[, valid_cpmData_cols_to_keep, drop = FALSE]
+
+print(paste("Number of samples kept after QC:", length(samples_to_keep_ids)))
+
+print("Dimensions of metaData_qc:")
+print(dim(metaData_qc))
+print("Head of metaData_qc (sample_ID and flags):")
+if (nrow(metaData_qc) > 0) {
+    print(head(metaData_qc %>% select(sample_ID, lib_size, low_reads_flag, max_r2, low_corr_flag)))
+}
+
+print("Dimensions of countData_qc:")
+print(dim(countData_qc))
+print("Head of countData_qc:")
+if (nrow(countData_qc) > 0 && ncol(countData_qc) > 0) {
+    print(head(countData_qc[, 1:min(5, ncol(countData_qc))]))
+}
+
+print("Dimensions of cpmData_qc:")
+print(dim(cpmData_qc))
+print("Head of cpmData_qc:")
+if (nrow(cpmData_qc) > 0 && ncol(cpmData_qc) > 0) {
+    print(head(cpmData_qc[, 1:min(5, ncol(cpmData_qc))]))
+}
+
+
+```
+
+***
+
+## Save
+
+**Exercise 17: Save the updated data:**
+
+```{r save-metadata}
+
+
+write.csv(countData_qc,"output/count_store.csv")
+write.csv(metaData_qc,"output/metadata_store.csv")
+
+write.csv(cpmData_qc,"output/cpm_store.csv")
+
+```
+
+***
+
+# Session Info
+
+**Exercise 18: Print your session info at the end of the script, knit the R markdown document, and push it to GitHub:**
+
+```{r session-info}
+library(sessioninfo)
+session_info()
+
+```
+
+***
+
+That is the end of the Sample QC. Example answers will be available from the `BOO_template` GitHub on Tuesday. 
+
+Next, please move on to the PCA using `04_PCA_Outline.Rmd`.
+
+***
+
