@@ -1,0 +1,8 @@
+"0",""
+"0","#Concentration (conc_amt_numeric) is clearly linked to the variation captured by PC2 and PC4. This is often a desired outcome, as it suggests these PCs are reflecting biological responses or changes induced by the different compound concentrations."
+"0",""
+"0","# The PCA appears to have somewhat separated the variance driven by compound concentration from the variance driven by library size, as these factors correlate most strongly with different sets of PCs."
+"0",""
+"0","#You can infer that PC2 and PC4 are likely capturing variance related to the biological effects of the compound concentrations."
+"0",""
+"0","#PC1 (which explains the most variance overall) does not show a strong correlation with any of the three factors displayed in this heatmap. This suggests that the largest source of variation in your dataset might be driven by another factor not included in this specific correlation analysis (e.g., the difference between the two main compounds, Diisopropanolamine vs. L-Tyrosine, or other unmeasured batch effects or biological differences). You would typically explore this further by creating PCA plots (like in Exercise 10) and coloring the samples by other metadata variables (like compound_name or plate_ID)."

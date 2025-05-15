@@ -1,0 +1,5 @@
+"0","#  Count the number of samples for each category in the 'sample_type' column"
+"0","sample_type_counts <- dplyr::count(metaData, sample_type)"
+"0",""
+"0","# Print the resulting table of counts"
+"0","print(sample_type_counts)"

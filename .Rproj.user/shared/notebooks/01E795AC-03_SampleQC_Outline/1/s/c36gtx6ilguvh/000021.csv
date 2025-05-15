@@ -1,0 +1,8 @@
+"0",""
+"0","#max_r2 (<dbl> for double/numeric):"
+"0",""
+"0","#This column shows the maximum Pearson correlation coefficient (r) that a given sample achieved when compared pairwise against all other replicates within its specific experimental group"
+"0",""
+"0","#Values close to 1 indicate very high correlation "
+"0",""
+"0","#The output you're seeing shows that the first 6 samples listed all have very high max_r2 values (all > 0.98), which is excellent and suggests these replicates are highly similar to at least one other replicate in their respective groups."

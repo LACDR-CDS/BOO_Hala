@@ -1,0 +1,2 @@
+"0","countData <- data.table::fread(""input/countData.txt"", sep = ""\t"")"
+"0","data.table::fread(""input/metaData.txt"", sep = ""\t"")"

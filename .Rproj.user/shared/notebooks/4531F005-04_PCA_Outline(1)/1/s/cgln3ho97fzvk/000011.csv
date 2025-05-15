@@ -1,0 +1,4 @@
+"0","# Add first 10 PCs to metadata"
+"0","metaData <- cbind(metadata, pcs$x[,1:10])"
+"0",""
+"0",""

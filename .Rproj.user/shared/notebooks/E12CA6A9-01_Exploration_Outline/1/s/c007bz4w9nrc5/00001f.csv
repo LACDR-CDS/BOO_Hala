@@ -1,0 +1,4 @@
+"0","#the range of experimental conditions which the samples have been exposed to"
+"0","metaData %>%"
+"0"," select(compound_name, compound_ID, conc_amt, conc_unit, conc_ID, compound_class)%>%"
+"0"," distinct() # remove the duplicates."

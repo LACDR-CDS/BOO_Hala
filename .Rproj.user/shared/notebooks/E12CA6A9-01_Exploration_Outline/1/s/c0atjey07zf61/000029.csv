@@ -1,0 +1,19 @@
+"0","# Load the project"
+"0","countData <- read_tsv(""input/countData.txt"")"
+"2","[1mRows: [22m[34m22533[39m [1mColumns: [22m[34m61[39m"
+"2","[36m--[39m [1mColumn specification[22m [36m----------------------------------------------------------------------------[39m
+[1mDelimiter:[22m ""\t""
+[31mchr[39m  (1): Probe
+[32mdbl[39m (60): CS1106_C1_P1_R1, CS1106_C1_P1_R2, CS1106_C1_P1_R3, CS1106_C2_P1_R1, CS1106_C2_P1_R2, C..."
+"2","
+[36mi[39m Use `spec()` to retrieve the full column specification for this data.
+[36mi[39m Specify the column types or set `show_col_types = FALSE` to quiet this message."
+"0","metaData <- read_tsv(""input/metaData.txt"")"
+"2","[1mRows: [22m[34m60[39m [1mColumns: [22m[34m29[39m"
+"2","[36m--[39m [1mColumn specification[22m [36m----------------------------------------------------------------------------[39m
+[1mDelimiter:[22m ""\t""
+[31mchr[39m (17): sample_ID, sample_type, compound_ID, compound_CAS, compound_name, compound_abbr, mean_...
+[32mdbl[39m (12): conc_ID, conc_amt, conc_max, conc_min, rep, lib_size, read_depth, plate_col, batch, ti..."
+"2","
+[36mi[39m Use `spec()` to retrieve the full column specification for this data.
+[36mi[39m Specify the column types or set `show_col_types = FALSE` to quiet this message."

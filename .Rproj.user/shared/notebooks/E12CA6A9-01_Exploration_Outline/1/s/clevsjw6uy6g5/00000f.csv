@@ -1,0 +1,4 @@
+"0","count <- read.table(""countData.txt"", header= TRUE)"
+"2","Warning: cannot open file 'countData.txt': No such file or directory"
+"2","Error in file(file, ""rt"") : cannot open the connection
+"

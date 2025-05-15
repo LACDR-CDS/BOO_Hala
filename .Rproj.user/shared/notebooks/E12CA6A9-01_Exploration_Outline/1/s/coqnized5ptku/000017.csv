@@ -1,0 +1,10 @@
+"0","# Change the variable `Probe` to the row names"
+"0","if (""Probe"" %in% colnames(countData)) {"
+"0"," countData <- tibble::column_to_rownames(countData, var = ""Probe"")"
+"0"," cat(""Action: Successfully moved the 'Probe' column to be the row names of 'countData'.\n\n"")"
+"0","} else {"
+"0","  cat(""Action skipped: 'Probe' column was not found in 'countData'.\n"")"
+"0","}"
+"1","Action: Successfully moved the 'Probe' column to be the row names of 'countData'.
+
+"

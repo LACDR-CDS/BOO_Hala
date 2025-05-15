@@ -1,0 +1,6 @@
+"0","# --- Further Exercise 11: Compensation ---"
+"0",""
+"0","metaData %>%"
+"0","  filter(sample_type == ""Control"") %>%"
+"0","  distinct(control_type, plate_ID, compound_name) %>% # See what 'compound' controls are too"
+"0","  arrange(plate_ID, control_type)"

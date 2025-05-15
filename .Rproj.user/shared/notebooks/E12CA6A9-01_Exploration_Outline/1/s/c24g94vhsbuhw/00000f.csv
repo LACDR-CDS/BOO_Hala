@@ -1,0 +1,7 @@
+"0","# See unique values in the cell_type column"
+"0","unique(metaData$cell_type)"
+"1","[1]"
+"1"," ""PHH"""
+"1","
+"
+"0","# PHH or  Primary Human Hepatocytes cell type were used"
