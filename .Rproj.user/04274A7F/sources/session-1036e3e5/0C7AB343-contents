@@ -3,7 +3,7 @@ title: "BOO 2025 - Example Analysis"
 subtitle: "Script 5: Differential expression - Questions"
 date: "`r Sys.Date()`" 
 author: 
-  Student name
+  Hala Saab
 output:
   html_document:
     code_download: true
@@ -16,6 +16,8 @@ output:
       collapsed: false
       smooth_scroll: true
 ---
+
+
 
 ***
 
@@ -40,6 +42,11 @@ As before, we perform several setup steps at the start of the script to ensure o
 ```{r clean}
  rm(list = ls())
 
+count_path <- file.path("Output/count_store.csv")
+metadata_path <- file.path("Output/metadata_store.csv")
+
+low_store <- file.path("Output/deg_results_low_toxicity.csv")
+high_store <- file.path("Output/deg_results_high_toxicity.csv")
 
 ```
 
@@ -51,8 +58,20 @@ In this script, we introduce a new package: `DESeq2`, a package that analyses co
 
 **Exercise 2: Load `DESeq2`, `ggrepel`, and `tidyverse` into your R environment:**
 
+```{r}
+if (!require("BiocManager", quietly = TRUE))
+  install.packages("BiocManager") 
+  BiocManager::install("DESeq2", force=T)
+  BiocManager::install("GenomeInfoDb", force=T)
+```
+
+
 ```{r load-packages, warning=F, message=F}
-#
+
+library(DESeq2)
+library(ggrepel)
+library(tidyverse)
+
 
 ```
 
@@ -62,8 +81,25 @@ In this script, we introduce a new package: `DESeq2`, a package that analyses co
 
 **Exercise 3: Load the count and metadata into your R environment:**
 
+```{r}
+getwd()
+setwd('C:/Users/hala2/AppData/Local/Temp/MicrosoftEdgeDownloads/e2ac4a38-f3d3-4e7a-b7d8-604e3ce8c83f')
+
+countdata <- read.csv('count_store.csv', header=TRUE, 
+                      stringsAsFactors=FALSE)
+
+
+
+```
+
+
 ```{r load-data, warning=FALSE, message=FALSE}
-#
+
+
+
+countdata  <- read.csv("output/count_store.csv")
+
+metadata  <- read.csv("output/metadata_store.csv")
 
 ```
 

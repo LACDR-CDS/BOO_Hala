@@ -1,4 +1,0 @@
-"0",""
-"0","#The distribution appears roughly unimodal, with the main peak centered around 3.5 to 4.0 million reads. This aligns well with your calculated median (~3.66M) and mean (~3.64M)."
-"0","#Based on mu summary statistics, the library sizes range from a minimum of 1,255,337 to a maximum of 5,244,421. The histogram visually confirms this spread, with bars covering this range."
-"0","#Yes, this range and distribution are generally reasonable and look quite good for a TempO-Seq experiment.Sufficient Depth, Above Minimum Thresholds and No Extreme Outliers."

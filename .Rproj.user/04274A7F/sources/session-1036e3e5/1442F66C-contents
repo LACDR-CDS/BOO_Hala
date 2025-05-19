@@ -280,7 +280,7 @@ lib_size_boxplot <- ggplot(plot_data_boxplot, aes(x = compound_name, y = lib_siz
     aes(color = low_reads_flag), 
     width = 0.25,       # Amount of horizontal jitter
     alpha = 0.8,        # Transparency of points
-    size = 2            # Size of points
+    size = 1            # Size of points
   ) +
   geom_hline(
     yintercept = count_threshold, 
@@ -296,7 +296,7 @@ lib_size_boxplot <- ggplot(plot_data_boxplot, aes(x = compound_name, y = lib_siz
     hjust = 1.05, # Adjust to be just right of the plot edge
     vjust = -0.5, # Adjust to be slightly above the line
     color = "red", 
-    size = 3.5
+    size = 2
   ) +
   scale_y_continuous(labels = scales::comma) + # Format y-axis with commas
   scale_fill_viridis_d(option = "D", name = "Concentration Amount") + # Colorblind-friendly discrete palette for fill
@@ -311,11 +311,11 @@ lib_size_boxplot <- ggplot(plot_data_boxplot, aes(x = compound_name, y = lib_siz
     x = "Compound Name",
     y = "Library Size (Total Counts per Sample)"
   ) +
-  theme_minimal(base_size = 12) +
+  theme_minimal(base_size = 8) +
   theme(
     plot.title = element_text(hjust = 0.5, face = "bold"),
-    plot.subtitle = element_text(hjust = 0.5, size = 10),
-    axis.text.x = element_text(angle = 45, hjust = 1, size = 10), # Angle x-axis labels
+    plot.subtitle = element_text(hjust = 0.5, size = 7),
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 7), # Angle x-axis labels
     legend.position = "top"
   )
 
@@ -369,9 +369,43 @@ In order to calculate pairwise correlations, each sample needs to be compared to
 ```{r pairwise-corr}
 
 # Display the head of the new logcpmData object.
-if (nrow(logcpmData) > 0 && ncol(logcpmData) > 0) {
-  print(head(logcpmData[, 1:min(5, ncol(logcpmData))]))
+replicateFilterOutput <- data.frame()
+
+# For each mean ID (experimental condition)
+for(i in unique(metaData$mean_ID)){
+  # Subset the meta data to keep only samples from this experiment
+  metaDataReps <- metaData %>% 
+    filter(mean_ID == i)
+  
+  # Subset the log2 CPM values to keep only these samples
+  cpmDataReps <- logcpmData[, metaDataReps$sample_ID] 
+  
+  # Loop through each column in the CPM data  
+  for(j in 1:ncol(cpmDataReps)){
+    # In a pairwise fashion
+    for(k in 1:ncol(cpmDataReps)){
+      # Save the position in the loops that you are in
+      sample_A <- colnames(cpmDataReps)[j]
+      sample_B <- colnames(cpmDataReps)[k]
+      
+      # Don't calculate pairwise correlations between identical samples (since it will be 1)  
+      if(sample_A != sample_B){
+        # Calculate pairwise correlation values
+        r2 <- cor(cpmDataReps[,j], cpmDataReps[,k])
+        
+        # Update the filter output data frame
+        replicateFilterOutput <- rbind(
+          replicateFilterOutput, 
+          data.frame(mean_ID = i, 
+                     sample_A = sample_A,
+                     sample_B = sample_B,
+                     r2 = r2))
+      }
+    }
+  }
 }
+head(replicateFilterOutput)
+
 
 ```
 
@@ -384,64 +418,25 @@ Each sample is judged by the best pairwise correlation it can achieve. If this i
 **Exercise 12: Calculate the `max_r2` for each sample and add it to the `replicateFilterOutput`:**
 
 ```{r max-r2}
-#Get unique experimental conditions (mean_IDs) and Initialize a list to store the max_r2 for each sample
-unique_mean_ids <- unique(metaData$mean_ID)
-sample_max_correlations_list <- list()
+replicateFilterOutput <- replicateFilterOutput %>% 
+  # Separate sample name into compound and concentration using the underscore
+  separate(sample_A, 
+           into = c("Compound", "Conc_ID", NA, NA), 
+           remove = F, 
+           sep = "_") %>% 
+  # If the compound is DMSO then keep only the first 5 letters (else we get DMSOHigh1 and DMSOHigh2 :D)
+  mutate(Compound = ifelse(grepl("DMSO", Compound), substr(Compound,1,5), Compound)) %>% 
+  # Group by sample
+  group_by(sample_A) %>%
+  # Save the maximum pairwise correlation for that sample
+  mutate(max_r2 = max(r2, na.rm = T)) %>% 
+  ungroup()
 
-# 3. Loop through each unique experimental condition (mean_ID)
+# Inspect output
+summary(replicateFilterOutput$max_r2)
 
-for (current_mean_id in unique_mean_ids) {
-  sample_ids_in_group <- metaData %>%
-    filter(mean_ID == current_mean_id) %>%
-    pull(sample_ID)
-  
-  if (length(sample_ids_in_group) > 1) {
-    valid_samples_in_group <- intersect(sample_ids_in_group, colnames(logcpmData))
-    
-    if (length(valid_samples_in_group) < 2) {
-        for(sample_id_single in sample_ids_in_group){
-             sample_max_correlations_list[[sample_id_single]] <- NA_real_
-        }
-        next 
-    }
-      
-    logcpm_subset_for_group <- logcpmData[, valid_samples_in_group, drop = FALSE]
-    correlation_matrix <- cor(logcpm_subset_for_group, method = "pearson")
-    
-    for (sample_name in colnames(correlation_matrix)) {
-      correlations_with_others <- correlation_matrix[sample_name, colnames(correlation_matrix) != sample_name]
-      
-      if (length(correlations_with_others) > 0) {
-        sample_max_correlations_list[[sample_name]] <- max(correlations_with_others, na.rm = TRUE)
-      } else {
-        sample_max_correlations_list[[sample_name]] <- NA_real_ 
-      }
-    }
-  } else {
-    if (length(sample_ids_in_group) == 1) {
-      sample_max_correlations_list[[sample_ids_in_group[1]]] <- NA_real_
-    }
-  }
-}
 
-#  Convert the list of max correlations into a data frame
-replicateFilterOutput <- data.frame(
-  sample_ID = names(sample_max_correlations_list),
-  max_r2 = unlist(sample_max_correlations_list),
-  row.names = NULL 
-)
 
-if (nrow(replicateFilterOutput) > 0) {
-  print(head(replicateFilterOutput))
-}
-
-#max_r2 (<dbl> for double/numeric):
-
-#This column shows the maximum Pearson correlation coefficient (r) that a given sample achieved when compared pairwise against all other replicates within its specific experimental group
-
-#Values close to 1 indicate very high correlation 
-
-#The output you're seeing shows that the first 6 samples listed all have very high max_r2 values (all > 0.98), which is excellent and suggests these replicates are highly similar to at least one other replicate in their respective groups.
 ```
 
 ***
@@ -452,63 +447,26 @@ if (nrow(replicateFilterOutput) > 0) {
 
 ```{r corr-boxplot}
 
-plot_data_for_corr_boxplot <- metaData %>%
-  left_join(replicateFilterOutput, by = "sample_ID") %>%
-  filter(!is.na(max_r2)) 
+replicateFilterOutput %>% 
+  # Plot the sample ID against the pairwise correlation
+  ggplot(aes(x = sample_A, y = r2)) +
+  # Draw a boxplot of the pairwise correlation distribution
+  geom_boxplot(color = "grey80") +
+  # With points for the actual values
+  geom_point(color = "grey60", size = 0.5) +
+  # Highlight the maximum pairwise correlation for each sample
+  geom_point(aes(y = max_r2, color = Conc_ID), 
+             size = 1.5) +
+  # Draw a line for the filter threshold
+  geom_hline(aes(yintercept = corr_threshold), 
+             color = "grey60", linetype = "dashed") +
+  ylab("") + xlab("Sample ID") + ggtitle("Replicate correlations") +
+  theme_bw() +
+  # Do not print sample names
+  theme(axis.text.x = element_blank()) +
+  # Make a different plot for each compound, allowing the x-axis to change for different samples
+  facet_wrap(~Compound, scales='free_x', nrow=2)
 
-if (nrow(plot_data_for_corr_boxplot) > 0) {
-  correlation_boxplot <- ggplot(plot_data_for_corr_boxplot, aes(x = mean_ID, y = max_r2)) +
-    geom_boxplot(
-      aes(fill = sample_type), 
-      outlier.shape = NA,      
-      alpha = 0.7,
-      notch = FALSE,
-      width = 0.9
-    ) +
-    geom_jitter(
-      aes(color = sample_type), 
-      width = 0.2,
-      alpha = 0.6,
-      size = 1.5
-    ) +
-    geom_hline(
-      yintercept = corr_threshold, 
-      linetype = "dashed", 
-      color = "red", 
-      linewidth = 1
-    ) +
-    annotate(
-      "text", 
-      x = -Inf, 
-      y = corr_threshold, 
-      label = paste("Corr. Threshold =", corr_threshold), 
-      hjust = -0.05, 
-      vjust = -0.5,  
-      color = "red", 
-      size = 3
-    ) +
-    scale_fill_brewer(palette = "Pastel1", name = "Sample Type:") + 
-    scale_color_brewer(palette = "Set1", name = "Sample Type:") +   
-    labs(
-      title = "Distribution of Maximum Pairwise Replicate Correlations (max_r2)",
-      subtitle = "Each point is a sample, showing its max correlation with other replicates in its group.",
-      x = "Experimental Condition (mean_ID)",
-      y = "Maximum Pairwise Correlation (max_r2)"
-    ) +
-    theme_minimal(base_size = 11) + 
-    theme(
-      plot.title = element_text(hjust = 0.5, face = "bold", size = 11),
-      plot.subtitle = element_text(hjust = 0.5, size = 9),
-      axis.text.x = element_text(angle = 60, hjust = 1, size = 7), 
-      axis.text.y = element_text(size = 8),
-      axis.title = element_text(size = 10, face = "bold"),
-      legend.title = element_text(size = 9, face = "bold"),
-      legend.text = element_text(size = 8),
-      legend.position = "top"
-    )
-
-  print(correlation_boxplot)
-}
 
 #The boxplot shows that replicate correlations (max_r2) are very high across almost all samples and conditions, with most values well above the 0.9 threshold (red dashed line). This indicates good reproducibility.
 
@@ -531,36 +489,32 @@ if (nrow(plot_data_for_corr_boxplot) > 0) {
 </details>
 
 ```{r corr-flag}
-if (!"max_r2" %in% colnames(metaData) && exists("replicateFilterOutput")) {
-  metaData <- metaData %>%
-    left_join(replicateFilterOutput, by = "sample_ID")
-}
+# Make a data frame of sample IDs and max r2
+replicateFilterMerge <- replicateFilterOutput %>% 
+  select(sample_ID = sample_A, max_r2) %>% 
+  distinct()
 
-if ("low_corr_flag" %in% colnames(metaData)) {
-  metaData <- metaData %>% select(-low_corr_flag)
-}
-metaData <- metaData %>% 
-  select(-any_of(c("low_corr_flag.x", "low_corr_flag.y")))
+# Merge with meta data
+metaData <- left_join(metaData, replicateFilterMerge, 
+                      by = "sample_ID") %>% 
+  mutate(flagLowCorr = ifelse(max_r2 <= corr_threshold, T, F))
 
-metaData <- metaData %>%
-  mutate(
-    low_corr_flag = ifelse(!is.na(max_r2) & max_r2 < corr_threshold, TRUE, FALSE)
-  )
+table(metaData$flagLowCorr)
 
-print(table(metaData$low_corr_flag, useNA = "ifany"))
-
-flagged_corr_samples <- metaData %>%
-  filter(low_corr_flag == TRUE) %>%
-  select(sample_ID, mean_ID, max_r2, low_corr_flag)
-
-if (nrow(flagged_corr_samples) > 0) {
-  print(head(flagged_corr_samples))
-}
 
 # This output indicates that all 60 samples in your dataset have a low_corr_flag of FALSE. This means that no samples were flagged as having a low replicate correlation based on your criterion (max_r2 < corr_threshold, where corr_threshold is 0.9).
 
 #This aligns with the visual interpretation of the boxplot from Exercise 13, where all samples appeared to have max_r2 values at or above the 0.9 threshold. It's a good sign, suggesting strong reproducibility among your replicates.
 ```
+
+```{r}
+
+
+
+metaData %>% 
+  filter(flagLowCorr)
+```
+
 
 ***
 
@@ -604,44 +558,21 @@ Instead of looking at pairwise correlations, another way of measuring how good a
 </details>
 
 ```{r any-flag}
-samples_to_keep_ids <- metaData %>%
-  filter(
-    (is.na(low_reads_flag) | low_reads_flag == FALSE) &
-    (is.na(low_corr_flag) | low_corr_flag == FALSE)
-  ) %>%
-  pull(sample_ID)
+# Subset the metadata to keep only high quality samples
+metaData_qc <- metaData %>% 
+  filter(!low_reads_flag & !flagLowCorr)
 
-metaData_qc <- metaData %>%
-  filter(sample_ID %in% samples_to_keep_ids)
+# Subset the count and CPM data
+cpmData_qc <- cpmData[ , metaData$sample_ID]
+countData_qc <- countData[ , metaData$sample_ID]
 
-valid_countData_cols_to_keep <- intersect(samples_to_keep_ids, colnames(countData))
-countData_qc <- countData[, valid_countData_cols_to_keep, drop = FALSE]
+# Check dimensions
+dim(metaData)
 
-valid_cpmData_cols_to_keep <- intersect(samples_to_keep_ids, colnames(cpmData))
-cpmData_qc <- cpmData[, valid_cpmData_cols_to_keep, drop = FALSE]
 
-print(paste("Number of samples kept after QC:", length(samples_to_keep_ids)))
+dim(countData)
+dim(cpmData)
 
-print("Dimensions of metaData_qc:")
-print(dim(metaData_qc))
-print("Head of metaData_qc (sample_ID and flags):")
-if (nrow(metaData_qc) > 0) {
-    print(head(metaData_qc %>% select(sample_ID, lib_size, low_reads_flag, max_r2, low_corr_flag)))
-}
-
-print("Dimensions of countData_qc:")
-print(dim(countData_qc))
-print("Head of countData_qc:")
-if (nrow(countData_qc) > 0 && ncol(countData_qc) > 0) {
-    print(head(countData_qc[, 1:min(5, ncol(countData_qc))]))
-}
-
-print("Dimensions of cpmData_qc:")
-print(dim(cpmData_qc))
-print("Head of cpmData_qc:")
-if (nrow(cpmData_qc) > 0 && ncol(cpmData_qc) > 0) {
-    print(head(cpmData_qc[, 1:min(5, ncol(cpmData_qc))]))
-}
 
 
 ```
@@ -672,8 +603,6 @@ write_csv(cpmData_qc,"output/cpm_store.csv")
 ```
 
 
-
-```
 
 ***
 

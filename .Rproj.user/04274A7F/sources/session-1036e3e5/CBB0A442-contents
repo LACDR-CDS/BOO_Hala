@@ -42,8 +42,8 @@ As before, we perform several setup steps at the start of the script to ensure o
 ```
 
 ```{r clean}
-cpm_path <- file.path("Output/cpm_store.Rdata")
-metadata_path <- file.path("Output/metadata_store.Rdata")
+cpm_path <- file.path("Output/cpm_store.csv")
+metadata_path <- file.path("Output/metadata_store.csv")
 ```
 
 ***

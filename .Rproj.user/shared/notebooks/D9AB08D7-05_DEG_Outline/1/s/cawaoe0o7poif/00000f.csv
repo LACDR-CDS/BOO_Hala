@@ -1,0 +1,8 @@
+"0"," rm(list = ls())"
+"0",""
+"0","count_path <- file.path(""Output/count_store.csv"")"
+"0","metadata_path <- file.path(""Output/metadata_store.csv"")"
+"0",""
+"0","low_store <- file.path(""Output/deg_results_low_toxicity.csv"")"
+"0","high_store <- file.path(""Output/deg_results_high_toxicity.csv"")"
+"0",""

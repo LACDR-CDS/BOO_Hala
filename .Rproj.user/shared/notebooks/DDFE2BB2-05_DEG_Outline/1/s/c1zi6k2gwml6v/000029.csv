@@ -1,0 +1,2 @@
+"0","countData_sub <- countData[ , metaData_sub$sample_ID]"
+"0","countData_sub[1:10, ]"

@@ -1,5 +1,0 @@
-"0",""
-"0","# Display the head of the new logcpmData object."
-"0","if (nrow(logcpmData) > 0 && ncol(logcpmData) > 0) {"
-"0","  print(head(logcpmData[, 1:min(5, ncol(logcpmData))]))"
-"0","}"

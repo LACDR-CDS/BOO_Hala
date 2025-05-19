@@ -1,0 +1,6 @@
+"0","dds <- DESeqDataSetFromMatrix("
+"0","  countData = countData_sub,"
+"0","  colData = metaData_sub,"
+"0","  design = ~ mean_ID"
+"0",")"
+"2","Warning: some variables in design formula are characters, converting to factors"

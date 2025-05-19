@@ -1,6 +1,0 @@
-"0",""
-"0","#The boxplot shows that replicate correlations (max_r2) are very high across almost all samples and conditions, with most values well above the 0.9 threshold (red dashed line). This indicates good reproducibility."
-"0",""
-"0","#Controls (DMSOHigh_P1, DMSOLow_P1, Medium_P6) show tight, consistently high correlations."
-"0","#Treatments (Diisopropanolamine and L-Tyrosine conditions) also show very good correlations, generally comparable to controls, with low variability within most groups."
-"0",""
