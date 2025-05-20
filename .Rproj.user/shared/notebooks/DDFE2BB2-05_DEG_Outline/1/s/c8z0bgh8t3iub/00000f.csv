@@ -1,3 +1,5 @@
+"0","# Reorder metaData_sub to match colnames(countData_sub) for DESeq2"
+"0",""
 "0","metaData_sub <- metaData_sub %>%"
 "0","    slice(match(colnames(countData_sub), sample_ID))"
 "0",""
@@ -6,4 +8,4 @@
 "1"," TRUE"
 "1","
 "
-"0","# this for the check why it is not True "
+"0","# this for the  Verification  and it is TRUE the are the same long"

@@ -1,0 +1,5 @@
+"0","deg_high <- unique((res_high %>% "
+"0","               filter(sig == T))$gene_symbol)"
+"0",""
+"0","deg_low <- unique((res_low %>% "
+"0","               filter(sig == T))$gene_symbol)"

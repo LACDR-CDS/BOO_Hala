@@ -1,0 +1,8 @@
+"0","i <- levels[1] #This assigns the selected first mean_ID (e.g., ""CS1106_1_P1"") to a new variable named i."
+"0",""
+"0","contrast_sub <- contrast_low %>% "
+"0","  filter(mean_ID == i) "
+"0","#It keeps only the row(s) where the value in the mean_ID column is equal to the value currently stored in the variable i (which is the first treatment condition, e.g., ""CS1106_1_P1"")."
+"0",""
+"0",""
+"0","contrast_sub"

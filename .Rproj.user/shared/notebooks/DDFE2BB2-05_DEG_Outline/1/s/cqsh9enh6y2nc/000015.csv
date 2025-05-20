@@ -2,7 +2,7 @@
 "0","                 contrast = c(""mean_ID"","
 "0","                              contrast_sub$mean_ID,"
 "0","                              contrast_sub$mean_ID_control),"
-"0","                 type=""normal"")"
+"0","                 type=""normal"") #(Normal distribution centered at 0)"
 "2","using 'normal' for LFC shrinkage, the Normal prior from Love et al (2014).
 
 Note that type='apeglm' and type='ashr' have shown to have less bias than type='normal'.

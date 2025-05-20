@@ -1,6 +1,6 @@
 "0",""
 "0","if(exists(""dds"")){"
-"0","  dds <- DESeq(dds) # This is the line that produces the output messages"
+"0","  dds <- DESeq(dds) # This performs normalization (estimating size factors), estimates gene-wise dispersions, and fits a negative binomial generalized linear model (GLM) for each gene."
 "0","}"
 "2","estimating size factors
 "

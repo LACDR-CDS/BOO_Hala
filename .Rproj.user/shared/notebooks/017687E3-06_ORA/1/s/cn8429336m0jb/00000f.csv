@@ -1,0 +1,5 @@
+"0","deg_high <- unique((res_high %>% "
+"0","               filter(sig == T))$gene_symbol)"
+"2","Error in h(simpleError(msg, call)) : 
+  error in evaluating the argument 'x' in selecting a method for function 'unique': object 'res_high' not found
+"

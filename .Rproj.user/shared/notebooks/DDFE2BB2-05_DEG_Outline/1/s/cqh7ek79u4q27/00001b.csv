@@ -1,0 +1,142 @@
+"0","for(i in levels[-1]){"
+"0","  contrast_sub <- contrast_low %>% "
+"0","    filter(mean_ID == i)"
+"0","  "
+"0","  metaData_sub <- metaData %>% "
+"0","    filter(mean_ID %in% c(contrast_sub$mean_ID, contrast_sub$mean_ID_control))"
+"0","  "
+"0","  countData_sub <- countData[ , metaData_sub$sample_ID]"
+"0",""
+"0","  dds <- DESeqDataSetFromMatrix("
+"0","    countData = countData_sub,"
+"0","    colData = metaData_sub,"
+"0","    design = ~ mean_ID)  "
+"0","  "
+"0","  dds <- DESeq(dds)"
+"0","  "
+"0","  res_low <- rbind(res_low, "
+"0","    data.frame(lfcShrink(dds,  #This function applies shrinkage to the log2 fold changes (LFCs) to provide more stable and reliable estimates, especially for genes with low counts or high variability."
+"0","                 contrast = c(""mean_ID"","
+"0","                              contrast_sub$mean_ID,"
+"0","                              contrast_sub$mean_ID_control),"
+"0","                 type=""normal"")) %>% "
+"0","    rownames_to_column(var = ""gene_symbol"") %>% #The row names in the DESeq2 results are moved into a column named gene_symbol "
+"0","    mutate("
+"0","      mean_ID = contrast_sub$mean_ID,"
+"0","      mean_ID_control = contrast_sub$mean_ID_control))"
+"0","}"
+"2","Warning: some variables in design formula are characters, converting to factors"
+"2","estimating size factors
+"
+"2","estimating dispersions
+"
+"2","gene-wise dispersion estimates
+"
+"2","mean-dispersion relationship
+"
+"2","final dispersion estimates
+"
+"2","fitting model and testing
+"
+"2","using 'normal' for LFC shrinkage, the Normal prior from Love et al (2014).
+
+Note that type='apeglm' and type='ashr' have shown to have less bias than type='normal'.
+See ?lfcShrink for more details on shrinkage type, and the DESeq2 vignette.
+Reference: https://doi.org/10.1093/bioinformatics/bty895
+"
+"2","Warning: some variables in design formula are characters, converting to factors"
+"2","estimating size factors
+"
+"2","estimating dispersions
+"
+"2","gene-wise dispersion estimates
+"
+"2","mean-dispersion relationship
+"
+"2","final dispersion estimates
+"
+"2","fitting model and testing
+"
+"2","using 'normal' for LFC shrinkage, the Normal prior from Love et al (2014).
+
+Note that type='apeglm' and type='ashr' have shown to have less bias than type='normal'.
+See ?lfcShrink for more details on shrinkage type, and the DESeq2 vignette.
+Reference: https://doi.org/10.1093/bioinformatics/bty895
+"
+"2","Warning: some variables in design formula are characters, converting to factors"
+"2","estimating size factors
+"
+"2","estimating dispersions
+"
+"2","gene-wise dispersion estimates
+"
+"2","mean-dispersion relationship
+"
+"2","final dispersion estimates
+"
+"2","fitting model and testing
+"
+"2","using 'normal' for LFC shrinkage, the Normal prior from Love et al (2014).
+
+Note that type='apeglm' and type='ashr' have shown to have less bias than type='normal'.
+See ?lfcShrink for more details on shrinkage type, and the DESeq2 vignette.
+Reference: https://doi.org/10.1093/bioinformatics/bty895
+"
+"2","Warning: some variables in design formula are characters, converting to factors"
+"2","estimating size factors
+"
+"2","estimating dispersions
+"
+"2","gene-wise dispersion estimates
+"
+"2","mean-dispersion relationship
+"
+"2","final dispersion estimates
+"
+"2","fitting model and testing
+"
+"2","using 'normal' for LFC shrinkage, the Normal prior from Love et al (2014).
+
+Note that type='apeglm' and type='ashr' have shown to have less bias than type='normal'.
+See ?lfcShrink for more details on shrinkage type, and the DESeq2 vignette.
+Reference: https://doi.org/10.1093/bioinformatics/bty895
+"
+"2","Warning: some variables in design formula are characters, converting to factors"
+"2","estimating size factors
+"
+"2","estimating dispersions
+"
+"2","gene-wise dispersion estimates
+"
+"2","mean-dispersion relationship
+"
+"2","final dispersion estimates
+"
+"2","fitting model and testing
+"
+"2","using 'normal' for LFC shrinkage, the Normal prior from Love et al (2014).
+
+Note that type='apeglm' and type='ashr' have shown to have less bias than type='normal'.
+See ?lfcShrink for more details on shrinkage type, and the DESeq2 vignette.
+Reference: https://doi.org/10.1093/bioinformatics/bty895
+"
+"2","Warning: some variables in design formula are characters, converting to factors"
+"2","estimating size factors
+"
+"2","estimating dispersions
+"
+"2","gene-wise dispersion estimates
+"
+"2","mean-dispersion relationship
+"
+"2","final dispersion estimates
+"
+"2","fitting model and testing
+"
+"2","using 'normal' for LFC shrinkage, the Normal prior from Love et al (2014).
+
+Note that type='apeglm' and type='ashr' have shown to have less bias than type='normal'.
+See ?lfcShrink for more details on shrinkage type, and the DESeq2 vignette.
+Reference: https://doi.org/10.1093/bioinformatics/bty895
+"
+"0","head(res_low)"

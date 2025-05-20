@@ -1,0 +1,5 @@
+"0",""
+"0",""
+"0","low_store  <- read_csv(""output/low_store.csv"")"
+"2","Error: 'output/low_store.csv' does not exist in current working directory ('C:/Users/hala2/Downloads').
+"

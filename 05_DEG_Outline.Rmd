@@ -154,7 +154,7 @@ We want to perform DEG analysis for each concentration of the low and high toxic
 
 ```{r levels}
 contrast_low <- contrast %>% 
-  filter(file_ID == "CS1106")
+  filter(file_ID == "CS1106") #this is DIPA which high TOX 
 
 contrast_low
 
@@ -397,7 +397,7 @@ First, we make the contrast for the high toxicity compound and save the levels:
 
 ```{r high-contrast}
 contrast_high <- contrast %>% 
-  filter(file_ID == "CS1133")
+  filter(file_ID == "CS1133") # tyrosine this LOW TOX
 
 contrast_high
 
@@ -504,10 +504,11 @@ It is important to save output of analyses locally, especially when they can be 
 
 ```{r save}
 
-write.csv(countData,"output/low_store.csv")
-write.csv(metaData,"output/high_store.csv")
+write.csv(res_low,"output/low_store.csv")
+write.csv(res_high,"output/high_store.csv")
 
-
+write_csv(res_low,"output/low_store.csv")
+write_csv(res_high,"output/high_store.csv")
 
 ```
 
@@ -581,7 +582,7 @@ plot_df %>%
   theme_bw() +
   facet_wrap(~Compound, scales="free_x")
 
-#CS116 is low tox 
+#CS116 is High TOX
 ```
 
 ***

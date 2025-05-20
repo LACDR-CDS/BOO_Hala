@@ -1,0 +1,3 @@
+"0","deg_high2 <- sapply(str_split(deg_high, ""_"",),'[',1)"
+"0",""
+"0","deg_low2 <- sapply(str_split(deg_low, ""_"",),'[',1)"

@@ -504,10 +504,11 @@ It is important to save output of analyses locally, especially when they can be 
 
 ```{r save}
 
-write.csv(countData,"output/low_store.csv")
-write.csv(metaData,"output/high_store.csv")
+write.csv(res_low,"output/low_store.csv")
+write.csv(res_high,"output/high_store.csv")
 
-
+write_csv(res_low,"output/low_store.csv")
+write_csv(res_high,"output/high_store.csv")
 
 ```
 

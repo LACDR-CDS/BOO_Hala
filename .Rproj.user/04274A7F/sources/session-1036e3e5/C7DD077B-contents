@@ -1,0 +1,295 @@
+---
+title: "BOO 2025 - Example Analysis"
+subtitle: "Script 6: Functional enrichment - Answers"
+date: "`r Sys.Date()`" 
+author: 
+  Student name
+output:
+  html_document:
+    code_download: true
+    theme: united
+    lowlight: tango
+    df_print: paged
+    toc: true
+    number_sections: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+---
+
+***
+
+> In this script, you will biologically interpret your differentially expressed genes.
+
+***
+
+# Setup
+
+## Clean
+
+As before, we perform several setup steps at the start of the script to ensure our work is reproducible and clear. 
+
+**Exercise 1: Download the R markdown template, clean your environment, and set the folhighing variables:**
+
+* `root_dir` - project folder
+* `low_store` - location of DEG results for the low toxicity compound
+* `high_store` - location of DEG results for the high toxicity compound
+
+```{r clean}
+rm(list=ls())
+
+
+low_store <- file.path("Output/low_store.csv")
+high_store <- file.path("Output/high_store.csv")
+
+```
+
+***
+
+## Packages
+
+In this script, we introduce a new package: `enrichR`, a package for gene set enrichment analysis that identifies biological pathways, gene ontology terms, and other functional annotations significantly associated with a given list of genes.
+
+**Exercise 2: Load `enrichR` and `tidyverse` into your R environment:**
+
+```{r load-packages, warning=F, message=F}
+library(tidyverse)
+library(enrichR)
+```
+
+***
+
+## Load data
+
+**Exercise 3: Load the DEG results R environment:**
+
+```{r load-data, warning=FALSE, message=FALSE}
+
+
+low_store  <- read_csv("output/low_store.csv")
+
+high_store  <- read_csv("output/high_store.csv")
+
+
+```
+
+***
+
+# ORA
+
+## Databases
+
+When performing any type of gene set analysis, you need to specify the gene sets of interest. This is one of the pitfalls but also benefits of this type of analysis.
+
+**Exercise 4: Use `listEnrichrDbs()` and look at the gene set databases available. Select a few of interest and describe them:**
+
+<details>
+  <summary><strong>Hint</strong></summary>
+
+  Sometimes a specific database has different version for different years. Try to select the most recent ones using `grepl`.
+
+</details>
+
+```{r}
+listEnrichrDbs() %>% 
+  filter(grepl("202", libraryName))
+```
+
+* `MSigDB_Hallmark_2020`: gene sets curated by the Broad Institute from the Molecular Signatures Database (MSigDB), repesenting coherent biological states or processes aimed to reduce redundancy in gene set databases.
+* `TG_GATES_2020`: derived from the Toxicogenomics Project-Genomics Assisted Toxicity Evaluation System (TG-GATEs), this database links gene expression changes to specific chemical exposures in rodent and human hepatocytes, providing mechanistic insights into toxicity and drug safety.
+* `GO_Biological_Process_2025`, `GO_Cellular_Component_2025`, and `GO_Molecular_Function_2025` are part of the Gene Ontology (GO) Consortium, and capture structured biological processes (e.g. inflammatory response), subcellular locations (e.g. mitochondrial matrix), and molecular activities (e.g. ATP binding), respectively.
+* `WikiPathways_2024_Human` is an open-source, community-curated collection of human biological pathways hosted by the WikiPathways project, aimed at enhancing transparency and collaboration in pathway annotation across a range of processes and diseases. 
+* `Reactome_Pathways_2024` is a peer-reviewed and manually curated database of human pathways developed by the Reactome Consortium, emphasizing detailed molecular interactions and regulatory mechanisms across signalling, metabolism, and disease.
+* `KEGG_2021_Human` is developed by the Kyoto Encyclopedia of Genes and Genomes (KEGG) and contains human pathway maps integrating genomic, chemical, and functional data to support systems-level understanding of cellular and organismal functions.
+
+***
+
+## DEG List
+
+In order to run ORA you need a list of genes of interest (your DEGs).
+
+**Exercise 5: Make a DEG list for each of the two compounds. How many DEGs do you have for each?**
+
+<details>
+  <summary><strong>Hint</strong></summary>
+
+  If you compound shows a dose response, you may want to select genes at a particular concentration of interest.
+
+</details>
+
+```{r}
+deg_high <- unique((res_high %>% 
+               filter(sig == T))$gene_symbol)
+
+deg_low <- unique((res_low %>% 
+               filter(sig == T))$gene_symbol)
+```
+
+There are 101 DEGs for the high toxicity compound and 146 for the low toxicity one.
+
+***
+
+## Enrichr
+
+The `enrichr` function performs over-representation analysis (ORA) using a list of genes in each of the databases specified by the `databases` argument, returning a list.
+
+**Exercise 6: Run `enrichr` using the selected databases and inspect the output for each compound. Are there any pathways you expected?:**
+
+<details>
+  <summary><strong>Hint</strong></summary>
+
+  You can use `bind_rows()` to convert lists into data frames and make inspecting the output easier.
+
+</details>
+
+```{r}
+ora_high <- enrichr(deg_high,
+                       c("GO_Biological_Process_2025",
+                         "GO_Molecular_Function_2025",
+                         "Reactome_Pathways_2024",
+                         "KEGG_2021_Human"))
+
+ora_high <- bind_rows(ora_high)
+
+ora_high %>% filter(Adjusted.P.value <= 0.05)
+```
+
+There are 92 enriched terms in the DEGs from the high toxicity compound (hydroquinone). Some of the top terms are expected responses from such an exposure:
+
+* **Retinoid** and **Retinol Metabolic Process**: retinoids are metabolized by cytochrome P450 enzymes, such as CYP1A1 and CYP1A2, which are DEGs in our data. These enzymes are also responsible for metabolism of hydroquinone, so it is not surprising the terms are enriched in our gene list. 
+* **Primary Alcohol Metabolic Process**: since hydroquinone disrupts phase I/II metabolism, including alcohol dehydrogenases, it is not surprising to see this as an enrichment for DEGs following hydroquinone exposure.
+* **Steroid** and **Estrogen Metabolic Process**: hydroquinone can influence endocrine and steroidogenesis via modulation of P450 enzymes
+* **Extracellular Matrix (ECM) Organization**: could be upregulated if hydroquinone is inducing oxidative stress or fibrotic signalling pathways, such as changing the expression of collagen genes
+* **Negative Regulation of IGF Receptor Signalling**: since the IGF axis is sensitive to oxidative stress, it may be up- or down-regulated in response to exposure to a high toxicity compound like hydroquinone
+
+***
+
+```{r}
+ora_low <- enrichr(deg_low,
+                       c("GO_Biological_Process_2025",
+                         "GO_Molecular_Function_2025",
+                         "Reactome_Pathways_2024",
+                         "KEGG_2021_Human"))
+
+ora_low <- bind_rows(ora_low)
+
+ora_low %>% filter(Adjusted.P.value <= 0.05)
+```
+
+There are 4 enriched terms in the DEGs from the low toxicity compound (triethylene glycol). This indicates that despite having a higher number of DEGs, the number of pathways disrupted by this lower toxicity compounds is less, which could be important for distinguishing relevant and less relevant transcriptomic responses. When we look at the terms enriched, they are more general:
+
+* `GTPase Regulator Activity`: GTPase regulators control cytoskeletal dynamics, trafficking, and signal transduction
+* `Metabolism`: as a xenobiotic, TEG is metabolized in the liver and even relatively inert chemicals can trigger broad metabolic genes in this instance
+* `Autophagy`: often induced by cellular stress, and since TEG is known to cause mild oxidative and metabolic stress at high concentrations, this enrichment may reflect that
+* `Metabolism of xenobiotics by cytochrome P450`: expected, as TEG is metabolized by these PHH cells after exposure
+
+***
+
+## Plots
+
+## Bar plots
+
+Using `geom_col`, we can visualize the results for each of the compounds.
+
+**Exercise 7: Take a look at the top enriched terms for each compound:**
+
+```{r}
+ora_high %>% 
+  arrange(Adjusted.P.value, P.value) %>% 
+  head(10) %>%
+  mutate(log10p = -log10(P.value)) %>% 
+  separate(Overlap, 
+           sep="/", 
+           into=c("Genes_found", "Size"),
+           remove=F) %>% 
+  mutate(Size = as.numeric(Size)) %>% 
+  ggplot(aes(y=reorder(Term, log10p))) + 
+  geom_col(aes(x=log10p, fill = Size),
+           color='black') +
+  ylab('') + xlab('-log10p') + ggtitle("Top ten enriched terms: ") +
+  scale_y_discrete(labels = function(x) str_wrap(x, width = 30)) +
+  theme_bw() +
+  theme(axis.text.y = element_text(size=7))
+```
+
+```{r}
+ora_low %>% 
+  arrange(Adjusted.P.value, P.value) %>% 
+  head(10) %>%
+  mutate(log10p = -log10(P.value)) %>% 
+  separate(Overlap, 
+           sep="/", 
+           into=c("Genes_found", "Size"),
+           remove=F) %>% 
+  mutate(Size = as.numeric(Size),
+         Genes = str_wrap(Genes, width = 10)) %>% 
+  ggplot(aes(y=reorder(Term, log10p))) + 
+  geom_col(aes(x=log10p, fill = Size),
+           color='black') +
+  ylab('') + xlab('-log10p') + ggtitle("Top ten enriched terms: ") +
+  scale_y_discrete(labels = function(x) str_wrap(x, width = 30)) +
+  theme_bw() +
+  theme(axis.text.y = element_text(size=7))
+```
+
+***
+
+## Upset plot
+
+You may also want to visualize the top enriched terms for both compounds together.
+
+**Exercise: Use `geom_tile()` to do this:**
+
+First we select terms to use in the plot (top 10 for each compound):
+
+```{r}
+top_terms <- c((ora_high %>% head(10))$Term, (ora_low %>% head(10))$Term)
+top_terms
+```
+
+***
+
+Then we bind the results together, making a new variable specifying if the compound is high or low toxicity:
+
+```{r}
+ora_high$Toxicity <- "High"
+ora_low$Toxicity <- "Low"
+
+ora_both <- rbind(ora_high, ora_low)
+ora_both
+```
+
+Then, we can make the plot:
+
+```{r}
+ora_both %>% 
+  filter(Term %in% top_terms) %>% 
+  ggplot(aes(y=Term, x=Toxicity)) +
+  geom_tile(color="grey50", fill="grey90", linewidth = 0.3) +
+  geom_point(aes(fill=Adjusted.P.value, size=Odds.Ratio), shape=21, color='black') +
+  ylab("") +
+  scale_y_discrete(labels = function(x) str_wrap(x, width = 50),
+                   expand=c(0,0)) +
+  scale_x_discrete(expand=c(0,0)) +
+  scale_fill_gradientn(colors = c('dodgerblue', 'black')) +
+  ggtitle('Top enriched terms in both compounds:') +
+  theme_minimal() +
+  theme(
+    axis.text.y = element_text(size=6),
+    panel.background = element_rect(fill='white', color='grey50'),
+    panel.grid = element_blank()
+  )
+```
+
+We can see that the enrichment of terms is greater (in terms of significance and effect size) in the high toxicity compound. For hydroquinone, strong negative regulation of insulin-like growth factor receptor signaling pathway suggests possible interference with growth or survival signaling, perhaps more expected in a high toxicity compound. For TEG on the other hand, smaller odds ratios overall and less significant p-values are consistent with milder or adaptive cellular responses.
+
+***
+
+# Session Info
+
+```{r session-info}
+devtools::session_info()
+```
+
+***
+
