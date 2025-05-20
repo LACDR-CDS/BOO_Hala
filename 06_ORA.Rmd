@@ -128,10 +128,10 @@ deg_low <- unique((res_low %>%
                filter(sig == T))$gene_symbol)
 ```
 
-There are 3612 DEGs for the high toxicity compound and 122 for the low toxicity one.
+There are 173 DEGs for the high toxicity compound and 3601 for the low toxicity one.
 
 ```{r}
-deg_high2 <- sapply(str_split(deg_high, "_",),'[',1)
+deg_high2 <- sapply(str_split(deg_high, "_",),'[',1) # chang the names from AARS1_3 to AAES1 so the function enrichr can look for it
 
 deg_low2 <- sapply(str_split(deg_low, "_",),'[',1)
 ```
@@ -167,13 +167,19 @@ ora_high %>%
 ```
 
 
-There are 92 enriched terms in the DEGs from the high toxicity compound (hydroquinone). Some of the top terms are expected responses from such an exposure:
+There are 2501 enriched terms in the DEGs from the compound (DIPA). Some of the top terms are expected responses from such an exposure:
 
-* **Retinoid** and **Retinol Metabolic Process**: retinoids are metabolized by cytochrome P450 enzymes, such as CYP1A1 and CYP1A2, which are DEGs in our data. These enzymes are also responsible for metabolism of hydroquinone, so it is not surprising the terms are enriched in our gene list. 
-* **Primary Alcohol Metabolic Process**: since hydroquinone disrupts phase I/II metabolism, including alcohol dehydrogenases, it is not surprising to see this as an enrichment for DEGs following hydroquinone exposure.
-* **Steroid** and **Estrogen Metabolic Process**: hydroquinone can influence endocrine and steroidogenesis via modulation of P450 enzymes
-* **Extracellular Matrix (ECM) Organization**: could be upregulated if hydroquinone is inducing oxidative stress or fibrotic signalling pathways, such as changing the expression of collagen genes
-* **Negative Regulation of IGF Receptor Signalling**: since the IGF axis is sensitive to oxidative stress, it may be up- or down-regulated in response to exposure to a high toxicity compound like hydroquinone
+
+* `Retinoid Metabolic Process & Retinoic Acid Metabolic Process`:These terms relate to the metabolism of retinoids (Vitamin A and its derivatives like retinoic acid), which are crucial for vision, growth, cell differentiation, and immune function. The liver plays a central role in storing and metabolizing retinoids. Cytochrome P450 enzymes are involved in this process. Enrichment here suggests your DEGs are involved in altering how Vitamin A is processed or utilized. **Plausible** (due to shared enzyme systems or broad metabolic impact). The liver is central to both retinoid and steroid metabolism. Many enzymes involved (especially CYPs) overlap with xenobiotic metabolism.
+
+* `Steroid Metabolic Process`:This involves the synthesis, modification, and breakdown of steroids, which include hormones like cholesterol, sex hormones, and corticosteroids. The liver is a key organ for steroid metabolism. Enrichment indicates an impact on these hormonal and metabolic pathways.
+* `Xenobiotic Catabolic Process`: "Xenobiotic" refers to foreign chemical substances not normally found in the body (like drugs or environmental toxins). "Catabolic process" means breaking them down. The liver is the primary organ for detoxifying and metabolizing xenobiotics, often via cytochrome P450 enzymes. Enrichment here is a strong indicator that the cells are responding to the compound as a foreign substance and are trying to metabolize or eliminate it. This is a very common and expected finding in toxicology studies. **Expected**. DIPA is a foreign chemical (xenobiotic). Liver cells (PHH) are the primary site for metabolizing such compounds. 
+
+* `Aminoglycoside Antibiotic Metabolic Process, Daunorubicin Metabolic Process, Doxorubicin Metabolic Proces`:hese terms refer to the metabolism of specific drugs (aminoglycoside antibiotics, and the chemotherapy drugs daunorubicin and doxorubicin). While your experiment might not use these exact drugs, the enzymes and pathways involved in their metabolism (often cytochrome P450s and other drug-metabolizing enzymes) can overlap with the metabolism of your test compound. Enrichment suggests that the DEGs are part of these general drug metabolism pathways. **Plausible** While DIPA isn't these specific drugs, these terms often highlight the activity of common drug-metabolizing enzyme systems (e.g., cytochrome P450s, conjugating enzymes) that the liver uses for a wide range of xenobiotics. 
+
+* `Polyketide Metabolic Process`: This is generally less directly related to the metabolism of an industrial chemical like DIPA. Its enrichment might point to effects on very broad or less specific enzyme systems, or it could be a weaker, less specific signal.
+
+
 
 ***
 
@@ -189,13 +195,13 @@ ora_low <- bind_rows(ora_low)
 ora_low %>% filter(Adjusted.P.value <= 0.05)
 ```
 
-There are 4 enriched terms in the DEGs from the low toxicity compound (triethylene glycol). This indicates that despite having a higher number of DEGs, the number of pathways disrupted by this lower toxicity compounds is less, which could be important for distinguishing relevant and less relevant transcriptomic responses. When we look at the terms enriched, they are more general:
-
-* `GTPase Regulator Activity`: GTPase regulators control cytoskeletal dynamics, trafficking, and signal transduction
-* `Metabolism`: as a xenobiotic, TEG is metabolized in the liver and even relatively inert chemicals can trigger broad metabolic genes in this instance
-* `Autophagy`: often induced by cellular stress, and since TEG is known to cause mild oxidative and metabolic stress at high concentrations, this enrichment may reflect that
-* `Metabolism of xenobiotics by cytochrome P450`: expected, as TEG is metabolized by these PHH cells after exposure
-
+There are 7953 enriched terms in the DEGs from the compound (tyrosine).
+* **Translation** and **Cytoplasmic Translation**: These terms relate to the process of protein synthesis, where genetic information encoded in mRNA is translated into proteins by ribosomes in the cytoplasm. Enrichment here suggests your DEGs are heavily involved in making new proteins. **Plausible**, often as a coordinated cellular response. These terms all relate to the machinery of producing proteins and other large molecules.
+ 
+* **Macromolecule Biosynthetic Process**: This is a broader category that includes the synthesis of large biological molecules like proteins, nucleic acids (DNA/RNA), and polysaccharides. Its enrichment, along with "Translation," points to significant changes in cellular building activities.
+* **Gene Expression**: This is a very general term covering the entire process of producing a functional gene product (either RNA or protein) from the information encoded in a gene. Its enrichment indicates widespread changes in how genes are being used.
+* **Proton Motive Force-Driven ATP Synthesis** and **Proton Motive Force-Driven Mitochondrial ATP Synthesis ** and **Oxidative Phosphorylation** and **Aerobic Electron Transport Chain** and **Mitochondrial ATP Synthesis Coupled Electron Transport **:These are all closely related terms pointing to mitochondrial energy production. They describe the processes by which cells generate ATP (the main energy currency) through the electron transport chain and oxidative phosphorylation within mitochondria. Enrichment of these terms strongly suggests that the compound treatment is significantly impacting cellular energy metabolism, particularly mitochondrial function.
+* **RNA Processing**:  This involves the modification of RNA molecules after transcription, including splicing, capping, and polyadenylation, which are crucial steps in producing mature and functional RNA. Enrichment here indicates that the regulation or processing of RNA is affected by the treatment.
 ***
 
 ## Plots
@@ -219,10 +225,12 @@ ora_high %>%
   ggplot(aes(y=reorder(Term, log10p))) + 
   geom_col(aes(x=log10p, fill = Size),
            color='black') +
-  ylab('') + xlab('-log10p') + ggtitle("Top ten enriched terms: ") +
+  ylab('') + xlab('-log10p') + ggtitle("Top ten enriched terms:DIPA ") +
   scale_y_discrete(labels = function(x) str_wrap(x, width = 30)) +
   theme_bw() +
   theme(axis.text.y = element_text(size=7))
+
+#This bar plot visualizes the top ten most significantly enriched biological terms or pathways for your differentially expressed genes, likely for one of your compounds. The length of each bar represents the statistical significance (-log10 of the P-value, so longer bars are more significant), and the fill color intensity of the bars indicates the size of the gene set (pathway), with darker blues representing larger gene sets.
 ```
 
 ```{r}
@@ -239,7 +247,7 @@ ora_low %>%
   ggplot(aes(y=reorder(Term, log10p))) + 
   geom_col(aes(x=log10p, fill = Size),
            color='black') +
-  ylab('') + xlab('-log10p') + ggtitle("Top ten enriched terms: ") +
+  ylab('') + xlab('-log10p') + ggtitle("Top ten enriched terms:Tyrosine ") +
   scale_y_discrete(labels = function(x) str_wrap(x, width = 30)) +
   theme_bw() +
   theme(axis.text.y = element_text(size=7))

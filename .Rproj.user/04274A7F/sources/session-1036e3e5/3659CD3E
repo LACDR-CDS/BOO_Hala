@@ -12,13 +12,13 @@
     "properties": {
         "expression": "ora_high",
         "caption": "ora_high",
-        "totalObservations": "7953",
-        "displayedObservations": "7953",
+        "totalObservations": "2501",
+        "displayedObservations": "2501",
         "variables": "10",
-        "cacheKey": "C6D131B3",
+        "cacheKey": "8D3606E7",
         "object": "ora_high",
         "environment": "",
-        "contentUrl": "grid_resource/gridviewer.html?env=&obj=ora_high&cache_key=C6D131B3&max_display_columns=50",
+        "contentUrl": "grid_resource/gridviewer.html?env=&obj=ora_high&cache_key=8D3606E7&max_display_columns=50",
         "preview": "0",
         "source_window_id": "",
         "Source": "Source"

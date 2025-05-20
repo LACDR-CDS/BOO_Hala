@@ -1,2 +1,8 @@
+"0","res <- rbind(res_high, res_low) "
 "0",""
+"0","plot_df <- res %>% "
+"0","  filter(!is.na(dir)) %>% "
+"0","  select(mean_ID, dir) %>% "
+"0","  distinct()"
 "0",""
+"0","plot_df"

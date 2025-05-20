@@ -154,7 +154,7 @@ We want to perform DEG analysis for each concentration of the low and high toxic
 
 ```{r levels}
 contrast_low <- contrast %>% 
-  filter(file_ID == "CS1106") #this is DIPA which high TOX 
+  filter(file_ID == "CS1133") #tyrosine
 
 contrast_low
 
@@ -162,7 +162,7 @@ levels <- unique(contrast_low$mean_ID)
 
 levels
 
-#CS1106_1_P1
+#CS1133_1_p6
 
 ```
 
@@ -185,7 +185,7 @@ i <- levels[1] #This assigns the selected first mean_ID (e.g., "CS1106_1_P1") to
 
 contrast_sub <- contrast_low %>% 
   filter(mean_ID == i) 
-#It keeps only the row(s) where the value in the mean_ID column is equal to the value currently stored in the variable i (which is the first treatment condition, e.g., "CS1106_1_P1").
+#It keeps only the row(s) where the value in the mean_ID column is equal to the value currently stored in the variable i (which is the first treatment condition, e.g., "CS1133_1_P6").
 
 
 contrast_sub
@@ -397,7 +397,7 @@ First, we make the contrast for the high toxicity compound and save the levels:
 
 ```{r high-contrast}
 contrast_high <- contrast %>% 
-  filter(file_ID == "CS1133") # tyrosine this LOW TOX
+  filter(file_ID == "CS1106") # DIPA
 
 contrast_high
 

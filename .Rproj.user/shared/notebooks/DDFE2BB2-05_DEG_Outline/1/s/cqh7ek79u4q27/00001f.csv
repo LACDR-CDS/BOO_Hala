@@ -1,0 +1,7 @@
+"0",""
+"0","#Identifies the treatment samples and their corresponding control samples.Subsets the count data and metadata for this specific comparison."
+"0","#Uses DESeq2 to model gene expression and test for differential expression between the treatment and control."
+"0","#Applies LFC shrinkage for more robust fold change estimates."
+"0","#Stores these results, along with identifiers for the comparison, in the res_high data frame."
+"0",""
+"0",""

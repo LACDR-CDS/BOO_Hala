@@ -1,7 +1,0 @@
-"0","plot_df %>% "
-"0","  mutate(n = ifelse(dir == ""Down"", -n, n)) %>% "
-"0","  ggplot(aes(x=Conc_ID, y=n, fill=dir)) +"
-"0","  geom_col() +"
-"0","  geom_hline(aes(yintercept=0)) +"
-"0","  theme_bw() +"
-"0","  facet_wrap(~Compound, scales=""free_x"")"

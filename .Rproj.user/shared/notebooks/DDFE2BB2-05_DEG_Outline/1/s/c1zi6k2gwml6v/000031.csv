@@ -1,2 +1,0 @@
-"0","countData_sub <- countData[ , metaData_sub$sample_ID]"
-"0","countData_sub[1:10, ] # Contains the raw count data for all genes, but only for the samples in the current treatment group and its control group, with columns ordered to match metaData_sub."

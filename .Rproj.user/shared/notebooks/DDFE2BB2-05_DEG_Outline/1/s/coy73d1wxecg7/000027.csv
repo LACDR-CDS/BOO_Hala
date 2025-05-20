@@ -1,2 +1,2 @@
-"0",""
-"0","# Adjust the table of the Data"
+"0","metaData <- subset(metaData, select = -1)"
+"0","metaData"
