@@ -65,7 +65,6 @@ metadata_path <- file.path("output/processed_metaData.RData")
 output_dir_script3 <- "output"
 if (!dir.exists(output_dir_script3)) {
   dir.create(output_dir_script3)
-  cat("Created directory:", output_dir_script3, "\n")
 }
 
 count_store <- file.path(output_dir_script3, "sampleQC_countData.RData")
@@ -513,6 +512,8 @@ table(metaData$flagLowCorr)
 
 metaData %>% 
   filter(flagLowCorr)
+
+# I do not have sample that did not pass the replicate correlation filter in the `metaData
 ```
 
 

@@ -94,6 +94,8 @@ countData <- countData %>% column_to_rownames(var = "X")
 ```{r}
 metaData <- subset(metaData, select = -1)
 metaData
+
+# Adjust the table of the Data
 ```
 
 ***
@@ -179,10 +181,12 @@ Before looping through `levels`, let's go through the steps required to perform 
 
 
 ```{r subset}
-i <- levels[1]
+i <- levels[1] #This assigns the selected first mean_ID (e.g., "CS1106_1_P1") to a new variable named i.
 
 contrast_sub <- contrast_low %>% 
-  filter(mean_ID == i)
+  filter(mean_ID == i) 
+#It keeps only the row(s) where the value in the mean_ID column is equal to the value currently stored in the variable i (which is the first treatment condition, e.g., "CS1106_1_P1").
+
 
 contrast_sub
 
@@ -191,13 +195,25 @@ contrast_sub
 ```{r}
 metaData_sub <- metaData %>% 
   filter(mean_ID %in% c(contrast_sub$sample_ID, mean_ID, contrast_sub$mean_ID_control))
-metaData_sub
+metaData_sub #Contains metadata for only the samples in the current treatment group and its control group, with the mean_ID factor correctly leveled for comparison.
+
+
+```
+
+```{r}
+countData_sub <- countData[ , metaData_sub$sample_ID]
+countData_sub[1:10, ] # Contains the raw count data for all genes, but only for the samples in the current treatment group and its control group, with columns ordered to match metaData_sub.
+
 
 ```
 ```{r}
-countData_sub <- countData[ , metaData_sub$sample_ID]
-countData_sub[1:10, ]
+# Reorder metaData_sub to match colnames(countData_sub) for DESeq2
 
+metaData_sub <- metaData_sub %>%
+    slice(match(colnames(countData_sub), sample_ID))
+
+all(colnames(countData_sub) == metaData_sub$sample_ID) 
+# this for the  Verification  and it is TRUE the are the same long
 ```
 
 
@@ -219,12 +235,14 @@ Now that we have subset our data, we can use it to create a DESeq object (`dds`)
 
 
 ```{r fit}
-dds <- DESeqDataSetFromMatrix(
+dds <- DESeqDataSetFromMatrix( #create a special R object called a DESeqDataSet.
   countData = countData_sub,
   colData = metaData_sub,
   design = ~ mean_ID
 )
-
+#I subsetted raw count data (countData_sub).
+#The corresponding sample metadata (metaData_sub).
+#The experimental design (~ mean_ID) that tells DESeq2 how to compare your samples
 
 ```
 
@@ -243,7 +261,7 @@ The output object, `dds`, contains all the model fits and is ready for extractin
 ```{r deseq}
 
 if(exists("dds")){
-  dds <- DESeq(dds) # This is the line that produces the output messages
+  dds <- DESeq(dds) # This performs normalization (estimating size factors), estimates gene-wise dispersions, and fits a negative binomial generalized linear model (GLM) for each gene.
 }
 
 dds
@@ -290,7 +308,7 @@ res_low <- lfcShrink(dds,
                  contrast = c("mean_ID",
                               contrast_sub$mean_ID,
                               contrast_sub$mean_ID_control),
-                 type="normal")
+                 type="normal") #(Normal distribution centered at 0)
 
 head(res_low)
 
@@ -343,23 +361,31 @@ for(i in levels[-1]){
   dds <- DESeq(dds)
   
   res_low <- rbind(res_low, 
-    data.frame(lfcShrink(dds, 
+    data.frame(lfcShrink(dds,  #This function applies shrinkage to the log2 fold changes (LFCs) to provide more stable and reliable estimates, especially for genes with low counts or high variability.
                  contrast = c("mean_ID",
                               contrast_sub$mean_ID,
                               contrast_sub$mean_ID_control),
                  type="normal")) %>% 
-    rownames_to_column(var = "gene_symbol") %>% 
+    rownames_to_column(var = "gene_symbol") %>% #The row names in the DESeq2 results are moved into a column named gene_symbol 
     mutate(
       mean_ID = contrast_sub$mean_ID,
       mean_ID_control = contrast_sub$mean_ID_control))
 }
 head(res_low)
 
+#Identifies the treatment samples and their corresponding control samples.Subsets the count data and metadata for this specific comparison.
+#Uses DESeq2 to model gene expression and test for differential expression between the treatment and control.
+#Applies LFC shrinkage for more robust fold change estimates.
+#Stores these results, along with identifiers for the comparison, in the res_high data frame.
+
 
 ```
 ```{r}
-dim(res_low)
+dim(res_low) #the dimensions of the res_low data frame. 
 
+
+#total number of rows. 157731
+#the total number of columns. 9
 ```
 
 
@@ -415,6 +441,10 @@ for(i in levels){
       mean_ID_control = contrast_sub$mean_ID_control))
 }
 
+#Identifies the treatment samples and their corresponding control samples.Subsets the count data and metadata for this specific comparison.
+#Uses DESeq2 to model gene expression and test for differential expression between the treatment and control.
+#Applies LFC shrinkage for more robust fold change estimates.
+#Stores these results, along with identifiers for the comparison, in the res_high data frame.
 
 ```
 ```{r}
@@ -443,9 +473,10 @@ There are many ways to define a differentially expressed gene based either on th
 ```{r sig-dir}
 res_high <- res_high %>% 
   mutate(
-    dir = ifelse(log2FoldChange < 0, "Down", "Up"),
+    dir = ifelse(log2FoldChange < 0, "Down", "Up"), #If log2FoldChange is less than 0, the dir column for that gene will be assigned the string "Down" (indicating downregulation).
+
     sig = ifelse(padj <= 0.05 & abs(log2FoldChange) > log2(1.2), TRUE, FALSE)
-  )
+  ) #The adjusted p-value. / This means the gene's expression must have changed by at least a 1.2-fold increase (e.g., from 10 to 12) or a 1.2-fold decrease (e.g., from 10 to 10/1.2 ≈ 8.33) to be considered biologically meaningful enough by this threshold. 
 
 table(res_high$sig, res_high$dir, useNA="always")
 
@@ -498,7 +529,7 @@ One of the plots that is useful to make following DEG analysis is visualization 
 </details>
 
 ```{r ref-df}
-res <- rbind(res_high, res_low)
+res <- rbind(res_high, res_low) 
 
 plot_df <- res %>% 
   filter(!is.na(dir)) %>% 
@@ -550,7 +581,7 @@ plot_df %>%
   theme_bw() +
   facet_wrap(~Compound, scales="free_x")
 
-
+#CS116 is low tox 
 ```
 
 ***
@@ -627,8 +658,32 @@ It can also be useful to plot individual gene results, especially to investigate
 **Exercise 21: Plot the top 16 genes for each of the compounds in a dose-response plot. Are there any genes with particular relevance to hepatotoxicity?**
 
 ```{r high-gene}
-#
+top_high <- unique((res_high %>% arrange(padj))$gene_symbol)[1:16]
+top_high
 
+res_high %>% 
+  filter(gene_symbol %in% top_high) %>% 
+  separate(mean_ID, sep="_", into=c('comp', 'c', NA), remove=F) %>% 
+  ggplot(aes(x=c, y=log2FoldChange)) +
+  geom_point() +
+  geom_line(aes(group=gene_symbol)) +
+  facet_wrap(~gene_symbol) +
+  theme_bw()
+
+
+```
+```{r}
+top_low <- unique((res_low %>% arrange(padj))$gene_symbol)[1:16]
+top_low
+
+res_low %>% 
+  filter(gene_symbol %in% top_low) %>% 
+  separate(mean_ID, sep="_", into=c('comp', 'c', NA), remove=F) %>% 
+  ggplot(aes(x=c, y=log2FoldChange)) +
+  geom_point() +
+  geom_line(aes(group=gene_symbol)) +
+  facet_wrap(~gene_symbol) +
+  theme_bw()
 ```
 
 ***

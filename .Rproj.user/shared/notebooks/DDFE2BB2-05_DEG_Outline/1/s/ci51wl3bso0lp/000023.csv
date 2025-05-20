@@ -1,6 +1,0 @@
-"0","contrast <- metaData %>% "
-"0","  filter(!is.na(mean_ID_control)) %>% "
-"0","  select(mean_ID, mean_ID_control, file_ID = compound_ID) %>% "
-"0","  distinct"
-"0",""
-"0","contrast"

@@ -1,0 +1,4 @@
+"0",""
+"0","countData <- countData %>% column_to_rownames(var = ""X"") "
+"0",""
+"0",""

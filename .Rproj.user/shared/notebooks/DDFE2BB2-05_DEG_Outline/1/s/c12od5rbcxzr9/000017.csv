@@ -1,5 +1,20 @@
-"0","dds
+"0",""
+"0","if(exists(""dds"")){"
+"0","  dds <- DESeq(dds) # This is the line that produces the output messages"
+"0","}"
+"2","estimating size factors
 "
+"2","estimating dispersions
+"
+"2","gene-wise dispersion estimates
+"
+"2","mean-dispersion relationship
+"
+"2","final dispersion estimates
+"
+"2","fitting model and testing
+"
+"0","dds"
 "1","class:"
 "1"," "
 "1","DESeqDataSet"
