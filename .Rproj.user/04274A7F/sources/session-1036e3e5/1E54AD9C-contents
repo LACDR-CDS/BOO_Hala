@@ -19,7 +19,7 @@ output:
 
 ***
 
-> In this script, you will biologically interpret your differentially expressed genes.
+> In this script, I will biologically interpret your differentially expressed genes.
 
 ***
 
@@ -203,6 +203,18 @@ There are 7953 enriched terms in the DEGs from the compound (tyrosine).
 * **Proton Motive Force-Driven ATP Synthesis** and **Proton Motive Force-Driven Mitochondrial ATP Synthesis ** and **Oxidative Phosphorylation** and **Aerobic Electron Transport Chain** and **Mitochondrial ATP Synthesis Coupled Electron Transport **:These are all closely related terms pointing to mitochondrial energy production. They describe the processes by which cells generate ATP (the main energy currency) through the electron transport chain and oxidative phosphorylation within mitochondria. Enrichment of these terms strongly suggests that the compound treatment is significantly impacting cellular energy metabolism, particularly mitochondrial function.
 * **RNA Processing**:  This involves the modification of RNA molecules after transcription, including splicing, capping, and polyadenylation, which are crucial steps in producing mature and functional RNA. Enrichment here indicates that the regulation or processing of RNA is affected by the treatment.
 ***
+
+
+```{r save}
+
+write.csv(ora_low,"output/ora_low.csv")
+write.csv(ora_high,"output/ora_high.csv")
+
+write_csv(ora_low,"output/ora_low.csv")
+write_csv(ora_high,"output/ora_high.csv")
+
+```
+
 
 ## Plots
 

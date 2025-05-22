@@ -19,7 +19,7 @@ output:
 
 ***
 
-> In this script, you will biologically interpret your differentially expressed genes.
+> In this script, I will biologically interpret your differentially expressed genes.
 
 ***
 
