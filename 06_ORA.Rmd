@@ -204,6 +204,18 @@ There are 7953 enriched terms in the DEGs from the compound (tyrosine).
 * **RNA Processing**:  This involves the modification of RNA molecules after transcription, including splicing, capping, and polyadenylation, which are crucial steps in producing mature and functional RNA. Enrichment here indicates that the regulation or processing of RNA is affected by the treatment.
 ***
 
+
+```{r save}
+
+write.csv(ora_low,"output/ora_low.csv")
+write.csv(ora_high,"output/ora_high.csv")
+
+write_csv(ora_low,"output/ora_low.csv")
+write_csv(ora_high,"output/ora_high.csv")
+
+```
+
+
 ## Plots
 
 ## Bar plots
