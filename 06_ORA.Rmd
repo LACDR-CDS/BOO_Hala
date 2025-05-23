@@ -205,15 +205,6 @@ There are 7953 enriched terms in the DEGs from the compound (tyrosine).
 ***
 
 
-```{r save}
-
-write.csv(ora_low,"output/ora_low.csv")
-write.csv(ora_high,"output/ora_high.csv")
-
-write_csv(ora_low,"output/ora_low.csv")
-write_csv(ora_high,"output/ora_high.csv")
-
-```
 
 
 ## Plots
@@ -317,6 +308,17 @@ ora_both %>%
 We can see that the enrichment of terms is greater (in terms of significance and effect size) in the high toxicity compound. For hydroquinone, strong negative regulation of insulin-like growth factor receptor signaling pathway suggests possible interference with growth or survival signaling, perhaps more expected in a high toxicity compound. For TEG on the other hand, smaller odds ratios overall and less significant p-values are consistent with milder or adaptive cellular responses.
 
 ***
+
+```{r save}
+
+write.csv(ora_low,"output/ora_low.csv")
+write.csv(ora_high,"output/ora_high.csv")
+write.csv(ora_both,"output/ora_both.csv")
+
+write_csv(ora_low,"output/ora_low.csv")
+write_csv(ora_high,"output/ora_high.csv")
+
+```
 
 # Session Info
 

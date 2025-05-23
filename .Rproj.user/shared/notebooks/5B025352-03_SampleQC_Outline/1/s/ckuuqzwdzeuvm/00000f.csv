@@ -1,0 +1,3 @@
+"0","#Calculate log2(CPM + 1)"
+"0","logcpmData <- log2(cpmData + 1)"
+"0",""

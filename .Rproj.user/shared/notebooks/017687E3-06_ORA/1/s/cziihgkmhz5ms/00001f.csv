@@ -1,0 +1,2 @@
+"0",""
+"0","#This bar plot visualizes the top ten most significantly enriched biological terms or pathways for your differentially expressed genes, likely for one of your compounds. The length of each bar represents the statistical significance (-log10 of the P-value, so longer bars are more significant), and the fill color intensity of the bars indicates the size of the gene set (pathway), with darker blues representing larger gene sets."

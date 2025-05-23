@@ -1,0 +1,7 @@
+"0",""
+"0",""
+"0","write.csv(countData_qc,""output/count_store.csv"")"
+"0","write.csv(metaData_qc,""output/metadata_store.csv"")"
+"0",""
+"0","write.csv(cpmData_qc,""output/cpm_store.csv"")"
+"0",""
