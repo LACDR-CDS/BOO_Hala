@@ -1,0 +1,3 @@
+"0","# Show probes that are relevant for all conditions"
+"0","probeManifest %>% "
+"0","  filter(n_relevant == max(n_relevant, na.rm=T))"

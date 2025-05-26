@@ -1,0 +1,5 @@
+"0","cpmData <- data.frame("
+"0","  # For each row, multiply the proportion each value represents by 1 million"
+"0","  apply(countData, 2, function(x){x/sum(x)*1E6}))"
+"0",""
+"0","cpmData[1:10, ]"

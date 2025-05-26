@@ -5,5 +5,5 @@
 "0","load(""output/countData.Rdata"")"
 "0","load(""output/metaData.Rdata"")"
 "0",""
-"0","manifest <- read_excel(""input/Human.xlsx"", sheet = 1)"
+"0","probeManifest  <- read_excel(""input/Human.xlsx"", sheet = 1)"
 "0",""

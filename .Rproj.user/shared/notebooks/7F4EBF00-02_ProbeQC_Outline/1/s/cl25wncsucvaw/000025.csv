@@ -1,6 +1,0 @@
-"0",""
-"0","# The total number of raw counts (library size) for the first few samples in your countData. For example, sample CS1106_C1_P1_R1 has a total of 3,232,071 counts."
-"0",""
-"0","# The cpmData object was created and has the same dimensions as your filtered countData (21930 probes/genes and 60 samples), which is expected."
-"0",""
-"0","# The values are now Counts Per Million (CPM). We can see they are no longer integers (like raw counts) and have been scaled."

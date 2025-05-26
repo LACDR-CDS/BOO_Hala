@@ -1,3 +1,0 @@
-"0","deg_high2 <- sapply(str_split(deg_high, ""_"",),'[',1) # chang the names from AARS1_3 to AAES1 so the function enrichr can look for it"
-"0",""
-"0","deg_low2 <- sapply(str_split(deg_low, ""_"",),'[',1)"
