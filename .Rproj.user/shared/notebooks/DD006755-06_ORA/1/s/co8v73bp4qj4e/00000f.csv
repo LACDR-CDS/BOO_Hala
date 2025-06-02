@@ -1,6 +1,0 @@
-"0","rm(list=ls())"
-"0",""
-"0",""
-"0","low_store <- file.path(""Output/low_store.csv"")"
-"0","high_store <- file.path(""Output/high_store.csv"")"
-"0",""

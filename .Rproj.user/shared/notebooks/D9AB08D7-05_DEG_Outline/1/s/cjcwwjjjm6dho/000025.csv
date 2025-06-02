@@ -1,6 +1,0 @@
-"0",""
-"0",""
-"0",""
-"0","countdata  <- read.csv(""output/count_store.csv"")"
-"2","Error in file(file, ""rt"") : cannot open the connection
-"
