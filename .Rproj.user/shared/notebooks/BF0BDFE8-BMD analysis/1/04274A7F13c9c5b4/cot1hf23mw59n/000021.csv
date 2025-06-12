@@ -1,0 +1,14 @@
+"0","bmdhigh_results <- read_tsv(""output/log2CPMhigh_williams_999999_NOMTC_foldfilter1.2_BMD.txt"",skip=49)
+"
+"2","Warning: [38;5;232mOne or more parsing issues, call `problems()` on your data frame for details, e.g.:
+  dat <- vroom(...)
+  problems(dat)[39m"
+"2","[1mRows: [22m[34m8685[39m [1mColumns: [22m[34m123[39m"
+"2","[36m──[39m [1mColumn specification[22m [36m────────────────────────────────────────────────────────────────────────────────────────────────────────────────────[39m
+[1mDelimiter:[22m ""\t""
+[31mchr[39m   (7): Probe ID, Exp 3 RSquared, Exp 3 Residual  5, Exp 3 Residual  6, Exp 3 Residual  7, Exp 3 Residual  8, Best Model
+[32mdbl[39m (104): Hill BMD, Hill BMDL, Hill BMDU, Hill fitPValue, Hill fitLogLikelihood, Hill AIC, Hill adverseDirection, Hill BMD/BMDL, Flagge...
+[33mlgl[39m  (12): Entrez Gene IDs, Genes Symbols, Hill Execution Complete, Hill Is Step Function Less Than Lowest Dose, Power Execution Complet..."
+"2","
+[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message."

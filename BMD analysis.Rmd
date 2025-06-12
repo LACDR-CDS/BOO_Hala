@@ -1,0 +1,78 @@
+---
+title: "BMD"
+output: html_document
+date: "2025-06-06"
+---
+
+```{r}
+
+rm(list=ls())
+
+
+bmd_results <- read_tsv("output,  skip = 52)
+
+bmd_results <- read_tsv("output,  skip = 52)
+
+```
+```{r}
+filtered_bmd <- bmd_results %>%
+  filter(
+    `Prefilter Adjusted P-Value` < 0.05,
+    `Max Fold Change Absolute Value` > 1.2,
+    `Best BMD/BMDL` < 20,
+    `Best BMDU/BMD` < 20,
+    `Best BMD` >= 2,
+    `Best BMD` <= 5000, 
+    `Best RSquared` > 0.7, 
+    `Best fitPValue` > 0.1 
+  )
+dim(filtered_bmd)
+```
+They match!
+
+```{r}
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+
+# Install Bioconductor annotation and enrichment tools
+BiocManager::install(c("clusterProfiler", "org.Hs.eg.db", "ReactomePA", "enrichplot"), ask = FALSE)
+
+# Load required packages
+library(clusterProfiler)
+library(org.Hs.eg.db)
+library(enrichplot)
+library(tidyverse)
+
+# Step 1: Extract gene symbols
+gene_list <- filtered_bmd$`Gene Symbols` %>% na.omit() %>% unique()
+
+# Step 2: Convert to Entrez IDs
+gene_entrez <- bitr(gene_list, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Hs.eg.db)
+
+# Step 3: GO Biological Process
+ego_bp <- enrichGO(gene = gene_entrez$ENTREZID,
+                   OrgDb = org.Hs.eg.db,
+                   keyType = "ENTREZID",
+                   ont = "BP",
+                   pAdjustMethod = "BH",
+                   pvalueCutoff = 0.05,
+                   qvalueCutoff = 0.2)
+
+# Step 4: KEGG Pathways
+ekegg <- enrichKEGG(gene = gene_entrez$ENTREZID,
+                    organism = "hsa",
+                    pvalueCutoff = 0.05)
+
+# Step 5: Reactome Pathways
+library(ReactomePA)
+ereact <- enrichPathway(gene = gene_entrez$ENTREZID,
+                        organism = "human",
+                        pvalueCutoff = 0.05,
+                        readable = TRUE)
+
+# View top results
+head(ego_bp, 10)
+head(ekegg, 10)
+head(ereact, 10)
+```
+

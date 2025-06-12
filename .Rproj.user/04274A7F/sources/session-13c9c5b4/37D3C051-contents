@@ -1,0 +1,133 @@
+---
+title: "BOO 2025"
+subtitle: "BMD"
+date: "`r Sys.Date()`" 
+author: 
+ Hala Saab
+output:
+  html_document:
+    code_download: true
+    theme: united
+    lowlight: tango
+    df_print: paged
+    toc: true
+    number_sections: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: true
+---
+
+
+# Setup
+
+## Clean
+
+As before, we perform several setup steps at the start of the script to ensure our work is reproducible and clear. 
+
+**Download the R markdown template, clean your environment, set variables, and load in `tidyverse`:**
+
+* `root_dir` - project folder
+* `low_store` - location of DEG results for the low toxicity compound
+* `high_store` - location of DEG results for the high toxicity compound
+
+```{r clean}
+# Clean
+rm(list=ls())
+
+```
+
+***
+
+## Load data
+
+**Load the DEG results R environment:**
+
+```{r load-data, warning=FALSE, message=FALSE}
+metaData  <- read.csv("output/metadata_store.csv")
+
+cpmData  <- read.csv("output/cpm_store.csv")
+library(dplyr)
+library(tibble)
+library(readr)
+
+```
+
+```{r}
+cpmData <- cpmData %>% column_to_rownames(var = "X") 
+
+
+```
+
+
+
+```{r}
+
+log2cpm <- as.data.frame(log2(cpmData + 1)) %>%
+  rownames_to_column(var = "SampleID")
+
+top_df <- as.data.frame(t(c("Dose", metaData$conc_amt)))
+colnames(top_df) <- c("SampleID", metaData$sample_ID)
+
+log2cpm <- rbind(top_df, log2cpm)
+log2cpm[1:5, 1:5]
+```
+
+
+```{r}
+  low.bmd <- metaData %>%
+    filter(compound_ID == "CS1133") %>%
+    arrange(conc_ID)
+  
+
+  high.bmd <- metaData %>%
+    filter(compound_ID == "CS1106") %>%
+    arrange(conc_ID)
+  
+  control.bmd <- metaData %>%
+    filter(sample_type == "Control") %>%
+    arrange(conc_ID)
+  
+  controlP1.bmd <- control.bmd %>% ####
+  filter(grepl("P1", plate_ID))
+  
+  controlP6.bmd <- control.bmd %>%
+  filter(grepl("P6", plate_ID))
+  
+  log2cpm.low.bmd <- log2cpm[ , low.bmd$sample_ID]
+  rownames(log2cpm.low.bmd) <- c("Dose", rownames(cpmData))
+  log2cpm.low.bmd <- log2cpm.low.bmd %>%
+    rownames_to_column(var="SampleID")
+  
+  log2cpm.high.bmd <- log2cpm[ , high.bmd$sample_ID]
+  rownames(log2cpm.high.bmd) <- c("Dose", rownames(cpmData))
+  log2cpm.high.bmd <- log2cpm.high.bmd %>%
+    rownames_to_column(var="SampleID")
+ log2cpm.ctrl.bmd <- log2cpm[ , control.bmd$sample_ID]
+  rownames(log2cpm.ctrl.bmd) <- c("Dose", rownames(cpmData))
+  log2cpm.ctrl.bmd <- log2cpm.ctrl.bmd %>%
+    rownames_to_column(var="SampleID")
+  
+  lowData.bmd <- cbind(log2cpm.low.bmd,log2cpm.ctrl.bmd)
+  lowData.bmd[is.na(lowData.bmd)] <- 0
+  lowData.bmd<-lowData.bmd[ ,-23]
+  
+  highData.bmd <- cbind(log2cpm.high.bmd,log2cpm.ctrl.bmd)
+  highData.bmd[is.na(highData.bmd)] <- 0
+  highData.bmd<-highData.bmd[ ,-23]
+  
+  
+write_tsv(lowData.bmd, "output/log2CPMlow.txt")  
+write_tsv(highData.bmd, "output/log2CPMhigh.txt")  
+```
+
+
+
+
+# Session Info
+
+```{r session-info}
+devtools::session_info()
+```
+
+***
+
