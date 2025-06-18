@@ -9,70 +9,1187 @@ date: "2025-06-06"
 rm(list=ls())
 
 
-bmd_results <- read_tsv("output,  skip = 52)
+bmdlow_results <- read_tsv("output/log2CPMlow_williams_999999_NOMTC_nofoldfilter_BMD.txt",skip=47)
 
-bmd_results <- read_tsv("output,  skip = 52)
+bmdhigh_results <- read_tsv("output/log2CPMhigh_hala_williams_999999_NOMTC_nofoldfilter_BMD.txt",skip=47)
 
 ```
 ```{r}
-filtered_bmd <- bmd_results %>%
-  filter(
-    `Prefilter Adjusted P-Value` < 0.05,
-    `Max Fold Change Absolute Value` > 1.2,
-    `Best BMD/BMDL` < 20,
-    `Best BMDU/BMD` < 20,
-    `Best BMD` >= 2,
-    `Best BMD` <= 5000, 
-    `Best RSquared` > 0.7, 
-    `Best fitPValue` > 0.1 
-  )
-dim(filtered_bmd)
+#load pakages
+library(tidyverse)
+library(enrichR)
+library(dplyr)
+library(data.table)
+
+#load the modules definition
+
+module_def <- read_tsv("output/hPHH_TXG-MAPr_module_definition.txt")
+
+
 ```
-They match!
+
+
+```{r}
+#add the filtered
+tyrosine_bmd <- bmdlow_results %>%
+  filter(
+    `Prefilter P-Value` < 0.05,
+    `Best BMD/BMDL` > 0.03,
+    `Best BMDU/BMD` > 0.03,
+    `Best BMD` > 0.003,
+    `Best BMD` < 180
+    ) %>% 
+  arrange(`Best BMD`)
+
+head(tyrosine_bmd)
+dim(tyrosine_bmd)
+```
+They match! 1872 gene
+
+
+
+```{r} 
+#Now the high DIPA
+DIPA_bmd <- bmdhigh_results %>%
+  filter(
+    `Prefilter P-Value` < 0.05,
+    `Best BMD/BMDL` > 0.03,
+    `Best BMDU/BMD` > 0.03,
+    `Best BMD` > 0.003,
+    `Best BMD` < 180
+    ) %>% 
+  arrange(`Best BMD`)
+head(DIPA_bmd)
+dim(DIPA_bmd)
+```
+They match! 1571 gene
+
+
+
+
+
+
+# load TXG data
+
+```{r}
+module_def$gene_symbol <- gsub("^id_", "", module_def$gene_symbol)
+```
+
+
+## Filter for modules of interest
+```{r}
+high_module <- module_def %>%
+  filter(module_number %in% c(356,272,302,385,338))
+
+low_module <- module_def %>%
+  filter(module_number %in% c(387, 210, 327, 368, 374, 319, 299, 393, 177, 113, 302, 181, 367, 114, 64, 360, 119, 350, 392, 256, 165, 73, 279, 379, 259, 326, 257, 275, 24, 378, 335, 304, 21, 238, 387, 299, 302, 177, 113, 114, 181, 119, 387, 322, 302, 177, 114, 113, 350, 64, 290, 360, 288, 239, 368, 177, 302, 113, 64, 320, 119, 181, 279, 379, 114, 140, 288, 299, 377, 302, 206, 290, 392, 165, 320, 203, 302, 312, 113, 304, 352))
+```
+
+
+## Merge data
+```{r}
+merged_low <- merge(low_module, tyrosine_bmd, 
+                   by.x = "gene_symbol", 
+                   by.y = "Probe ID", 
+                   all = FALSE)  # inner join: only matching rows
+```
+
+```{r}
+merged_high <- merge(high_module, DIPA_bmd, 
+                   by.x = "gene_symbol", 
+                   by.y = "Probe ID", 
+                   all = FALSE)  # inner join: only matching rows
+```
+
+
+##Calculate the median
+```{r}
+median_per_module_l <- merged_low %>%
+  group_by(module_number) %>%
+  summarise(median_best_bmd = median(`Best BMD`, na.rm = TRUE))
+
+median_per_module_h <- merged_high %>%
+  group_by(module_number) %>%
+  summarise(median_best_bmd = median(`Best BMD`, na.rm = TRUE))
+
+dim(median_per_module_h)
+dim(median_per_module_l)
+
+```
+Median for DIPA is 3
+for Tyrosine is 31
+
+## Fifth and 25% percentile per module 
+```{r}
+subset_values_high <- median_per_module_h$median_best_bmd[2:nrow(median_per_module_h)]
+subset_values_low <- median_per_module_l$median_best_bmd[2:nrow(median_per_module_l)]
+perc_5_low <- quantile(subset_values_low, probs = 0.05, na.rm = TRUE)
+perc_5_high <- quantile(subset_values_high, probs = 0.05, na.rm = TRUE)
+
+
+perc_25_low <- quantile(subset_values_low, probs = 0.25, na.rm = TRUE)
+perc_25_high <- quantile(subset_values_high, probs = 0.25, na.rm = TRUE)
+
+The25th_low <- if (length(subset_values_low) >= 25) bmcs_low[25] else NA
+The25th_high <- if (length(subset_values_high) >= 25) bmcs_low[25] else NA
+
+ratioshigh <- subset_values_high[-1] / subset_values_high[-length(subset_values_high)]
+group_indiceshigh <- which(ratios <= 1.66)
+# Group adjacent indices
+groupshigh <- split(group_indiceshigh, cumsum(c(1, diff(group_indiceshigh) != 1)))
+# Get largest consistent group
+largest_grouphigh <- groups[[which.max(sapply(groups, length))]]
+lcrd_valuehigh <- subset_values_high[largest_group[1]]
+
+ratioslow <- subset_values_low[-1] / subset_values_low[-length(subset_values_low)]
+group_indiceslow <- which(ratios <= 1.66)
+# Group adjacent indices
+groupslow <- split(group_indiceslow, cumsum(c(1, diff(group_indiceslow) != 1)))
+# Get largest consistent group
+largest_group <- groups[[which.max(sapply(groups, length))]]
+lcrd_valuelow <- subset_values_low[largest_group[1]]
+
+
+# First Mode 
+denslow <- density(subset_values_low)
+x_vals <- denslow$x
+y_vals <- denslow$y
+dy <- diff(y_vals) / diff(x_vals)
+mode_indexlow <- which(diff(sign(dy)) == -2)[1]
+first_mode_valuelow <- x_vals[mode_index]
+
+# First Mode 
+denshigh <- density(subset_values_high)
+x_vals <- denshigh$x
+y_vals <- denshigh$y
+dy <- diff(y_vals) / diff(x_vals)
+mode_indexhigh <- which(diff(sign(dy)) == -2)[1]
+first_mode_valuehigh <- x_vals[mode_index]
+
+
+```
+Tyrosine 5% is 0.01799
+DIPA   92.629
+
+Tyrrosine 25% is 0.02969518
+DIPA 97.75412 
+
+25th Lowest Ranked Gene BMC Tyroine 0.0135073
+DIPA  NA 
+
+LCRD (Lowest Consistent Response Dose) Tyrosine 0.1830905
+DIPA 91.34882
+
+```{r}
+#mu codii
+# For Tyrosine (low)
+lowest_module_low <- median_per_module_l[which.min(median_per_module_l$median_best_bmd), ]
+
+# For DIPA (high)
+lowest_module_high <- median_per_module_h[which.min(median_per_module_h$median_best_bmd), ]
+
+median_per_module_l
+
+```
+Lowest tyrosine 319	0.0146534	
+DIPA 338	91.34882	
+
+
+```{r}
+top_genes_low <- tyrosine_bmd$`Probe ID`
+top_genes_high <- DIPA_bmd$`Probe ID`
+
+#low 1872 gene
+#high 1571 gene
+```
+
+## Gene level 5th percentile and 25 lowest ranked (additional LCRD and first mode) for Low tyrosine
+```{r}
+# Prepare BMC vector (ensure it's numeric and sorted)
+bmcs_low <- sort(tyrosine_bmd$'Best BMD'[!is.na(tyrosine_bmd$'Best BMD')])
+
+# Fifth Percentile (as raw number)
+fifth_percentile_value_low <- as.numeric(quantile(bmcs_low, probs = 0.05, names = FALSE))
+
+# First Mode (density-based)
+dens <- density(bmcs_low)
+x_vals <- dens$x
+y_vals <- dens$y
+dy <- diff(y_vals) / diff(x_vals)
+mode_index <- which(diff(sign(dy)) == -2)[1]
+first_mode_value <- x_vals[mode_index]
+
+# 25th Lowest Ranked Gene BMC
+bmc_25th_low <- if (length(bmcs_low) >= 25) bmcs_low[25] else NA
+
+# LCRD (Lowest Consistent Response Dose)
+ratios <- bmcs_low[-1] / bmcs_low[-length(bmcs_low)]
+group_indices <- which(ratios <= 1.66)
+
+# Group adjacent indices
+groups <- split(group_indices, cumsum(c(1, diff(group_indices) != 1)))
+
+# Get largest consistent group
+largest_group <- groups[[which.max(sapply(groups, length))]]
+lcrd_value <- bmcs_low[largest_group[1]]
+
+# Collect all results
+tPOD_low <- list(
+  fifth_percentile = fifth_percentile_value_low,
+  first_mode = first_mode_value,
+  bmc_25th = bmc_25th_low,
+  lcrd = lcrd_value
+)
+
+# Print result
+print(tPOD_low)
+```
+$fifth_percentile 0.02317264
+
+$first_mode 0.4055055
+
+$bmc_25th 0.0135073
+
+$lcrd 0.0031554
+
+```{r}
+tyrosine_bmd[which.min(tyrosine_bmd$`Best BMD`), ]
+```
+
+PSMB2
+
+## Gene level 5th percentile and 25 lowest ranked for DIPA
+```{r}
+# Step 0: Prepare BMC vector from bmd_theo
+bmcs_high <- sort(DIPA_bmd$'Best BMD'[!is.na(DIPA_bmd$'Best BMD')])
+
+# STEP 1: Fifth Percentile
+fifth_percentile_high <- as.numeric(quantile(bmcs_high, probs = 0.05, names = FALSE))
+
+# STEP 2: First Mode
+dens_high <- density(bmcs_high)
+x_vals_high <- dens_high$x
+y_vals_high <- dens_high$y
+dy_high <- diff(y_vals_high) / diff(x_vals_high)
+mode_index_high <- which(diff(sign(dy_high)) == -2)[1]
+first_mode_high <- x_vals_high[mode_index_high]
+
+# STEP 3: 25th Lowest Ranked Gene BMC
+bmc_25th_high <- if (length(bmcs_high) >= 25) bmcs_high[25] else NA
+
+# STEP 4: LCRD (Lowest Consistent Response Dose)
+ratios_high <- bmcs_high[-1] / bmcs_high[-length(bmcs_high)]
+group_indices_high <- which(ratios_high <= 1.66)
+groups_high <- split(group_indices_high, cumsum(c(1, diff(group_indices_high) != 1)))
+largest_group_high <- groups_high[[which.max(sapply(groups_high, length))]]
+lcrd_high <- bmcs_high[largest_group_high[1]]
+
+# Collect all results into a named list
+tPOD_high <- list(
+  fifth_percentile = fifth_percentile_high,
+  first_mode = first_mode_high,
+  bmc_25th = bmc_25th_high,
+  lcrd = lcrd_high
+)
+
+# Print result
+print(tPOD_high)
+```
+$fifth_percentile 5.07928
+
+$first_mode 9.286763
+
+$bmc_25th 0.0975562
+
+$lcrd 0.24955
+```{r}
+DIPA_bmd[which.min(DIPA_bmd$`Best BMD`), ]
+```
+
+HPO 0.00667166
+```{r}
+DIPA_bmd[which.min(DIPA_bmd$`Best BMD`), ]
+lowest_bmd_high <- min(DIPA_bmd$`Best BMD`, na.rm = TRUE)
+lowest_bmd_high
+```
+
+
+
+##plot the resultaat
+
+```{r}
+# Required package
+library(ggplot2)
+
+# Prepare BMC values
+bmcs_high <- DIPA_bmd$'Best BMD'[!is.na(DIPA_bmd$'Best BMD')]
+
+# Compute density for plotting
+bmc_density_high <- density(bmcs_high)
+
+# Create a data frame of tPOD values for plotting
+tPOD_df_high <- data.frame(
+  name = c("5th Percentile", "First Mode", "25th Lowest", "LCRD"),
+  value = c(
+    fifth_percentile_high,
+    first_mode_high,
+    bmc_25th_high,
+    lcrd_high
+  )
+)
+
+# Plot with ggplot2
+ggplot() +
+  geom_line(aes(x = bmc_density_high$x, y = bmc_density_high$y), color = "steelblue", linewidth = 1) +
+  geom_vline(data = tPOD_df_high, aes(xintercept = value, color = name), linetype = "dashed", linewidth = 1) +
+  scale_color_manual(values = c(
+    "5th Percentile" = "red",
+    "First Mode" = "green",
+    "25th Lowest" = "pink",
+    "LCRD" = "purple"
+  )) +
+  labs(
+    title = "tPOD Metrics on BMC Density (DIPA)",
+    x = "BMC",
+    y = "Density",
+    color = "tPOD Method"
+  ) +
+  theme_minimal()
+```
+
+```{r}
+# Calculate cumulative counts for each unique BMC
+cum_data_high <- data.frame(
+  BMD_high = unique(bmcs_high),
+  CumCount_high = sapply(unique(bmcs_high), function(x) sum(bmcs_high <= x))
+)
+
+# Optional: convert to fraction
+cum_data_high<- cum_data_high %>%
+  mutate(CumFraction = CumCount_high / length(bmcs_high))
+
+# Prepare tPODs as data frame for vertical lines
+tPOD_df_high <- data.frame(
+  name = c("5th Percentile", "First Mode", "25th Lowest", "LCRD"),
+  value = c(
+    fifth_percentile_high,
+    first_mode_high,
+    bmc_25th_high,
+    lcrd_high
+  )
+)
+
+# Plot cumulative count (accumulation) with tPOD vertical lines
+ggplot(cum_data_high, aes(x = BMD_high, y = CumCount_high)) +
+  geom_step(color = "steelblue", linewidth = 1) +          # step plot for accumulation
+  geom_vline(data = tPOD_df_high, aes(xintercept = value, color = name),
+             linetype = "dashed", linewidth = 1) +
+  scale_color_manual(values = c(
+    "5th Percentile" = "red",
+    "First Mode" = "green",
+    "25th Lowest" = "orange",
+    "LCRD" = "purple"
+  )) +
+  scale_x_log10()+
+  labs(
+    title = "Accumulation Plot of DIPA",
+    x = "Best BMD",
+    y = "Cumulative Number of Genes",
+    color = "tPOD Method"
+  ) +
+  theme_minimal()
+```
+```{r}
+library(ggplot2)
+library(scales)
+
+# Define the tPODs for vertical lines
+tPOD_df_high <- data.frame(
+  name = c("5th Percentile", "25th Lowest"),
+  value = c(fifth_percentile_high, bmc_25th_high)
+)
+
+# Create the plot
+ggplot(cum_data_high, aes(x = BMD_high, y = CumCount_high)) +
+  # Accumulation line
+  geom_step(color = "#1f77b4", size = 1.2) +
+  
+  # Vertical dashed lines
+  geom_vline(data = tPOD_df_high, 
+             aes(xintercept = value, color = name),
+             linetype = "dashed", size = 1) +
+  
+  # Custom colors for vertical lines
+  scale_color_manual(values = c(
+    "5th Percentile" = "#d62728",   # Red
+    "25th Lowest" = "#ff7f0e"       # Orange
+  )) +
+
+  # Log scale for x-axis with cleaner breaks
+  scale_x_log10(
+    breaks = trans_breaks("log10", function(x) 10^x),
+    labels = trans_format("log10", math_format(10^.x))
+  ) +
+
+  # Axis labels and title
+  labs(
+    title = "Cumulative Distribution of Best BMD Values DIPA",
+    x = expression("Best BMD (log"[10]*" scale)"),
+    y = "Cumulative Number of Genes",
+    color = "tPOD Estimate"
+  ) +
+
+  # Theme tweaks for publication
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
+    legend.position = "top",
+    legend.title = element_text(face = "bold"),
+    legend.key.height = unit(0.4, "cm"),
+    legend.key.width = unit(1.2, "cm"),
+    axis.text = element_text(color = "black"),
+    axis.title = element_text(face = "bold")
+  )
+```
+
+
+```{r}
+ggsave("accum_high.jpeg", plot = last_plot(), width = 13, height = 8)
+```
+
+#Tyrosine
+```{r}
+# Required package
+library(ggplot2)
+
+# Prepare BMC values
+bmcs_low <- tyrosine_bmd$'Best BMD'[!is.na(tyrosine_bmd$'Best BMD')]
+
+# Compute density for plotting
+bmc_density_low <- density(bmcs_low)
+
+# Create a data frame of tPOD values for plotting
+tPOD_df_low <- data.frame(
+  name = c("5th Percentile", "First Mode", "25th Lowest", "LCRD"),
+  value = c(
+     fifth_percentile_value_low,
+     first_mode_value,
+     bmc_25th_low,
+     lcrd_value
+  )
+)
+
+# Plot with ggplot2
+ggplot() +
+  geom_line(aes(x = bmc_density_low$x, y = bmc_density_low$y), color = "steelblue", linewidth = 1) +
+  geom_vline(data = tPOD_df_low, aes(xintercept = value, color = name), linetype = "dashed", linewidth = 1) +
+  scale_color_manual(values = c(
+    "5th Percentile" = "red",
+    "First Mode" = "green",
+    "25th Lowest" = "pink",
+    "LCRD" = "purple"
+  )) +
+  labs(
+    title = "tPOD Metrics on BMC (Tyrosine)",
+    x = "BMC",
+    y = "Density",
+    color = "tPOD Method"
+  ) +
+  theme_minimal()
+```
+
+```{r}
+# Calculate cumulative counts for each unique BMC
+cum_data_low <- data.frame(
+  BMD_low = unique(bmcs_low),
+  CumCount_low = sapply(unique(bmcs_low), function(x) sum(bmcs_low <= x))
+)
+
+# Optional: convert to fraction
+cum_data_low<- cum_data_low %>%
+  mutate(CumFraction = CumCount_low / length(bmcs_low))
+
+# Prepare tPODs as data frame for vertical lines
+tPOD_df_low <- data.frame(
+  name = c("5th Percentile", "First Mode", "25th Lowest", "LCRD"),
+  value = c(
+     fifth_percentile_value_low,
+     first_mode_value,
+     bmc_25th_low,
+     lcrd_value
+  )
+)
+
+# Plot cumulative count (accumulation) with tPOD vertical lines
+ggplot(cum_data_low, aes(x = BMD_low, y = CumCount_low)) +
+  geom_step(color = "steelblue", linewidth = 1) +          # step plot for accumulation
+  geom_vline(data = tPOD_df_low, aes(xintercept = value, color = name),
+             linetype = "dashed", linewidth = 1) +
+  scale_color_manual(values = c(
+    "5th Percentile" = "red",
+    "First Mode" = "green",
+    "25th Lowest" = "orange",
+    "LCRD" = "purple"
+  )) +
+  scale_x_log10()+
+  labs(
+    title = "Accumulation Plot of Tyrosine",
+    x = "Best BMD",
+    y = "Cumulative Number of Genes",
+    color = "tPOD Method"
+  ) +
+  theme_minimal()
+```
+
+
+```{r}
+library(ggplot2)
+library(scales)
+
+# Define the tPODs for vertical lines
+tPOD_df_low <- data.frame(
+  name = c("5th Percentile", "25th Lowest"),
+  value = c(fifth_percentile_value_low, bmc_25th_low)
+)
+
+# Create the plot
+ggplot(cum_data_low, aes(x = BMD_low, y = CumCount_low)) +
+  # Accumulation line
+  geom_step(color = "#1f77b4", size = 1.2) +
+  
+  # Vertical dashed lines
+  geom_vline(data = tPOD_df_low, 
+             aes(xintercept = value, color = name),
+             linetype = "dashed", size = 1) +
+  
+  # Custom colors for vertical lines
+  scale_color_manual(values = c(
+    "5th Percentile" = "#d62728",   # Red
+    "25th Lowest" = "#ff7f0e"       # Orange
+  )) +
+
+  # Log scale for x-axis with cleaner breaks
+  scale_x_log10(
+    breaks = trans_breaks("log10", function(x) 10^x),
+    labels = trans_format("log10", math_format(10^.x))
+  ) +
+
+  # Axis labels and title
+  labs(
+    title = "Cumulative Distribution of Best BMD Values Tyrosine",
+    x = expression("Best BMD (log"[10]*" scale)"),
+    y = "Cumulative Number of Genes",
+    color = "tPOD Estimate"
+  ) +
+
+  # Theme tweaks for publication
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold", size = 14),
+    legend.position = "top",
+    legend.title = element_text(face = "bold"),
+    legend.key.height = unit(0.4, "cm"),
+    legend.key.width = unit(1.2, "cm"),
+    axis.text = element_text(color = "black"),
+    axis.title = element_text(face = "bold")
+  )
+```
+
+```{r}
+ggsave("accum_low.jpeg", plot = last_plot(), width = 13, height = 8)
+```
+
+```{r}
+# Clean and sort BMDs
+bmd_vals_low <- sort(na.omit(tyrosine_bmd$`Best BMD`))
+
+# Create cumulative index
+accumulation_df_low <- data.frame(
+  Rank = seq_along(bmd_vals_low),
+  BMD = bmd_vals_low
+)
+```
+
+```{r}
+ggplot(accumulation_df_low, aes(x = BMD, y = Rank)) +
+  geom_line(color = "steelblue", size = 1) +
+  labs(
+    title = "Best BMD Accumulation Plot – Tyrosine",
+    x = "Ranked Genes (by BMD)",
+    y = "Best BMD"
+  ) +
+  theme_minimal()
+```
+
+
+```{r}
+# Clean and sort BMDs
+bmd_vals_high <- sort(na.omit(DIPA_bmd$`Best BMD`))
+
+# Create cumulative index
+accumulation_df_high <- data.frame(
+  Rank = seq_along(bmd_vals_high),
+  BMD = bmd_vals_high
+)
+```
+
+```{r}
+ggplot(accumulation_df_high, aes(x = BMD, y = Rank)) +
+  geom_line(color = "steelblue", size = 1) +
+  labs(
+    title = "Best BMD Accumulation Plot – DIPA",
+    x = "Ranked Genes (by BMD)",
+    y = "Best BMD"
+  ) +
+  theme_minimal()
+```
+
+# ORA
+```{r}
+library(enrichR)
+```
+
+## tyrosine pathways
+```{r}
+ora_low <- enrichr(top_genes_low,
+               c("GO_Biological_Process_2025",
+                 "GO_Molecular_Function_2025",
+                 "Reactome_Pathways_2024",
+                 "KEGG_2021_Human"))
+```
+
+## DIPA pathways
+```{r}
+ora_high <- enrichr(top_genes_high,
+               c("GO_Biological_Process_2025",
+                 "GO_Molecular_Function_2025",
+                 "Reactome_Pathways_2024",
+                 "KEGG_2021_Human"))
+```
+```{r}
+ora_low <- bind_rows(ora_low)
+ora_high <- bind_rows(ora_high)
+```
+
+```{r}
+ora_low %>% filter(Adjusted.P.value <= 0.05)
+```
+Cytoplasmic Translation (GO:0002181)	26/101	
+Macromolecule Biosynthetic Process (GO:0009059)	38/189	
+Ubiquitin-Dependent Protein Catabolic Process (GO:0006511)	71/455	
+Translation (GO:0006412)	42/232	
+Endoplasmic Reticulum to Golgi Vesicle-Mediated Transport (GO:0006888)	25/112	
+Positive Regulation of Organelle Assembly (GO:1902117)	17/65	
+Proteasome-Mediated Ubiquitin-Dependent Protein Catabolic Process (GO:0043161)	54/340	
+Positive Regulation of DNA-templated Transcription (GO:0045893)	159/1274	
+Regulation of Transcription Elongation by RNA Polymerase II (GO:0034243)	19/79	
+Cellular Response to Starvation (GO:0009267)
+
+```{r}
+ora_high %>% filter(Adjusted.P.value <= 0.05)
+```
+Regulation of Cell Migration (GO:0030334)	64/479	
+Positive Regulation of Cell Migration (GO:0030335)	49/344	
+Glycerophospholipid Biosynthetic Process (GO:0046474)	22/110	
+Negative Regulation of Cellular Process (GO:0048523)	68/531	
+Metal Ion Binding (GO:0046872)	65/516	
+Actin Binding (GO:0003779)	30/187	
+Alcohol Dehydrogenase [NAD(P)+] Activity (GO:0018455)	8/22	
+Ferrous Iron Binding (GO:0008198)	8/23	
+Regulation of IGF Transport and Uptake by Insulin-like Growth Factor Binding Proteins (IGFBPs)	30/124	
+Metabolism
+
+```{r}
+head(ora_low$Term,10)
+```
+
+```{r}
+head(ora_high$Term,10)
+```
+
+```{r}
+ora_low %>% 
+  arrange(Adjusted.P.value, P.value) %>% 
+  head(10) %>%
+  mutate(log10p = -log10(P.value)) %>% 
+  separate(Overlap, 
+           sep="/", 
+           into=c("Genes_found", "Size"),
+           remove=F) %>% 
+  mutate(Size = as.numeric(Size)) %>% 
+  ggplot(aes(y=reorder(Term, log10p))) + 
+  geom_col(aes(x=log10p, fill = Size),
+           color='black') +
+  scale_fill_gradient(
+    low = "#add8e6",   # Light blue
+    high = "#00008b"    # Dark blue
+  ) +
+  ylab('') + xlab('-log10p') + ggtitle("Top ten enriched terms: Tyrosine") +
+  scale_y_discrete(labels = function(x) str_wrap(x, width = 30)) +
+  theme_bw() +
+  theme(axis.text.y = element_text(size=7))
+```
+```{r}
+ora_high %>% 
+  arrange(Adjusted.P.value, P.value) %>% 
+  head(10) %>%
+  mutate(log10p = -log10(P.value)) %>% 
+  separate(Overlap, 
+           sep="/", 
+           into=c("Genes_found", "Size"),
+           remove=F) %>% 
+  mutate(Size = as.numeric(Size)) %>% 
+  ggplot(aes(y=reorder(Term, log10p))) + 
+  geom_col(aes(x=log10p, fill = Size),
+           color='black') +
+  scale_fill_gradient(
+    low = "#add8e6" ,   # Light blue
+    high =  "#00008b"  # Dark blue
+  ) +
+  ylab('') + xlab('-log10p') + ggtitle("Top ten enriched terms: DIPA") +
+  scale_y_discrete(labels = function(x) str_wrap(x, width = 30)) +
+  theme_bw() +
+  theme(axis.text.y = element_text(size=7))
+```
+
+
+## Filter for genes 3 times the lowest conc Tyrosine
+```{r}
+top_genes_high <- (bmdhigh_results %>% filter(`Best BMD` <= 3*0.03))$`Probe ID`
+dim(top_genes_high)
+
+top_genes_low <- (bmdlow_results %>% filter(`Best BMD` <= 3*0.03))$`Probe ID`
+dim(top_genes_low)
+```
+0 genes are there 
+
+```{r}
+# Step 1: Convert enrichR Overlap (e.g., "7/108") to numeric values
+library(dplyr)
+library(stringr)
+
+# Clean Overlap column
+ora_low <- ora_low %>%
+  mutate(
+    Overlap_Hit = as.numeric(str_extract(Overlap, "^[0-9]+")),
+    Overlap_Total = as.numeric(str_extract(Overlap, "[0-9]+$"))
+  )
+
+ora_low <- ora_low %>%
+  mutate(
+    Coverage = (Overlap_Hit/Overlap_Total)*100)
+
+ora_low_filtered <- ora_low %>%
+  filter(Coverage >= 5)
+
+ora_low_filtered <- ora_low_filtered %>%
+  filter(str_count(Genes, ";") + 1 >= 3)
+
+dim(ora_low_filtered)
+head(ora_low_filtered)
+```
+3770 pathways 
+
+
+
+```{r}
+# Clean Overlap column
+ora_high <- ora_high %>%
+  mutate(
+    Overlap_Hit = as.numeric(str_extract(Overlap, "^[0-9]+")),
+    Overlap_Total = as.numeric(str_extract(Overlap, "[0-9]+$"))
+  )
+
+ora_high <- ora_high %>%
+  mutate(
+    Coverage = (Overlap_Hit/Overlap_Total)*100)
+
+ora_high_filtered <- ora_high %>%
+  filter(Coverage >= 5)
+
+ora_high_filtered <- ora_high_filtered %>%
+  filter(str_count(Genes, ";") + 1 >= 3)
+
+dim(ora_high_filtered)
+```
+3463 pathways
+
+```{r}
+ora_high_filtered$GeneList <- str_split(ora_high_filtered$Genes, ";")
+```
+
+```{r}
+head(ora_high_filtered$Term,10)
+```
+
+```{r}
+head(ora_low_filtered$Term,10)
+```
+
+
+```{r}
+# Create a named vector of BMDs
+gene_bmds <- DIPA_bmd %>% 
+  select(`Probe ID`, `Best BMD`) %>%
+  deframe()  # Converts to named vector
+```
+
+
+```{r}
+calc_pathway_pod <- function(gene_list) {
+  bmds <- gene_bmds[gene_list]
+  bmds <- bmds[!is.na(bmds)]
+  
+  if (length(bmds) < 3) {
+    return(tibble(min_BMD = NA, q5_BMD = NA, q25_BMD = NA))
+  }
+  
+  tibble(
+    min_BMD = min(bmds),
+    q5_BMD = quantile(bmds, 0.05),
+    q25_BMD = quantile(bmds, 0.25)
+  )
+}
+library(purrr)
+
+# Apply to all GeneLists and combine into a single data frame
+pathway_pods <- map_dfr(ora_high_filtered$GeneList, calc_pathway_pod)
+
+# Add pathway names
+pathway_pods$Term <- ora_high_filtered$Term
+
+pathway_pods
+```
+
+
+
+
+```{r}
+## whay these probe
+bmd_low_proberen <- tyrosine_bmd %>%
+  filter(`Probe ID` %in% c("YY1","CTC1","BRPF3","UIMC1","PDGFB","TERF2IP","PTK6")) %>%
+  arrange('Best BMD')
+
+bestBMD_values <- bmd_low_proberen$`Best BMD`
+print(bestBMD_values)
+
+```
+
+
+
+```{r}
+library(dplyr)
+library(stringr)
+
+
+# Filter ora_met2_filtered to keep rows where at least one gene in 'Genes' is in probe_ids
+ora_filtered_low <- ora_low_filtered %>%
+  filter(
+    sapply(Genes, function(gene_str) {
+      genes_vec <- str_split(gene_str, ";")[[1]]  # split genes by ";"
+      any(genes_vec %in% top_genes_low)
+    })
+  )
+
+# Check the filtered data
+print(head(ora_filtered_low))
+```
+1	Cytoplasmic Translation (GO:0002181)	26/101	1.366895e-06	
+2	Macromolecule Biosynthetic Process (GO:0009059)	38/189	4.787062e-06	
+3	Ubiquitin-Dependent Protein Catabolic Process (GO:0006511)	71/455	1.221334e-05	
+4	Translation (GO:0006412)	42/232	2.364157e-05	
+5	Endoplasmic Reticulum to Golgi Vesicle-Mediated Transport (GO:0006888)	25/112	3.178506e-05	
+6	Positive Regulation of Organelle Assembly (GO:1902117)
+
+ 
+
+```{r}
+# Filter ora_high_filtered to keep rows where at least one gene in 'Genes' is in probe_ids
+ora_filtered_high <- ora_high_filtered %>%
+  filter(
+    sapply(Genes, function(gene_str) {
+      genes_vec <- str_split(gene_str, ";")[[1]]  # split genes by ";"
+      any(genes_vec %in% top_genes_high)
+    })
+  )
+
+# Check the filtered data
+print(head(ora_filtered_high))
+```
+1	Regulation of Cell Migration (GO:0030334)	64/479	1.960688e-05	0.04306811	0	
+2	Positive Regulation of Cell Migration (GO:0030335)	49/344	3.543190e-05	0.04306811	0	
+3	Glycerophospholipid Biosynthetic Process (GO:0046474)	22/110	3.883317e-05	0.04306811	0	
+4	Negative Regulation of Cellular Process (GO:0048523)	68/531	4.306811e-05	0.04306811	0	
+5	Positive Regulation of Cell Motility (GO:2000147)	35/249	5.609596e-04	0.11150715	0	
+6	Supramolecular Fiber Organization (GO:0097435)	43/339	1.247046e-03	0.
+
+  ID                   Genes
+1  1      ADH1C;ALDH8A1;ADH6
+2  2 ADH1C;BCO1;ALDH8A1;ADH6
+3 12  ADH1C;BCO1;UGT2B7;ADH6
+
+
+```{r}
+library(tidyr)
+library(dplyr)
+```
 
 ```{r}
 if (!requireNamespace("BiocManager", quietly = TRUE))
-  install.packages("BiocManager")
+    install.packages("BiocManager")
 
-# Install Bioconductor annotation and enrichment tools
-BiocManager::install(c("clusterProfiler", "org.Hs.eg.db", "ReactomePA", "enrichplot"), ask = FALSE)
-
-# Load required packages
-library(clusterProfiler)
-library(org.Hs.eg.db)
-library(enrichplot)
-library(tidyverse)
-
-# Step 1: Extract gene symbols
-gene_list <- filtered_bmd$`Gene Symbols` %>% na.omit() %>% unique()
-
-# Step 2: Convert to Entrez IDs
-gene_entrez <- bitr(gene_list, fromType = "SYMBOL", toType = "ENTREZID", OrgDb = org.Hs.eg.db)
-
-# Step 3: GO Biological Process
-ego_bp <- enrichGO(gene = gene_entrez$ENTREZID,
-                   OrgDb = org.Hs.eg.db,
-                   keyType = "ENTREZID",
-                   ont = "BP",
-                   pAdjustMethod = "BH",
-                   pvalueCutoff = 0.05,
-                   qvalueCutoff = 0.2)
-
-# Step 4: KEGG Pathways
-ekegg <- enrichKEGG(gene = gene_entrez$ENTREZID,
-                    organism = "hsa",
-                    pvalueCutoff = 0.05)
-
-# Step 5: Reactome Pathways
-library(ReactomePA)
-ereact <- enrichPathway(gene = gene_entrez$ENTREZID,
-                        organism = "human",
-                        pvalueCutoff = 0.05,
-                        readable = TRUE)
-
-# View top results
-head(ego_bp, 10)
-head(ekegg, 10)
-head(ereact, 10)
+BiocManager::install("org.Hs.eg.db",force = TRUE)
 ```
 
+
+```{r}
+library(dplyr)
+library(org.Hs.eg.db)
+library(AnnotationDbi)
+
+go_sets <- AnnotationDbi::select(org.Hs.eg.db, keys=tyrosine_bmd$'Probe ID',
+                                 columns=c("GO"), keytype="SYMBOL") %>%
+  filter(ONTOLOGY == "BP")  # biological process GO terms
+
+go_bmd <- inner_join(go_sets, tyrosine_bmd, by = c("SYMBOL" = "Probe ID"))
+
+gene_set_summary <- go_bmd %>%
+  group_by(GO) %>%
+  summarize(total_genes = n(),
+            genes_with_bmd = sum(!is.na('Best BMD')),
+            percent_with_bmd = genes_with_bmd / total_genes)
+
+filtered_sets <- gene_set_summary %>%
+  filter(total_genes >= 3, percent_with_bmd >= 0.05) %>%
+  pull(GO)
+
+# 4. Calculate median BMD per filtered gene set
+median_bmd_per_set <- go_bmd %>%
+  filter(GO %in% filtered_sets) %>%
+  group_by(GO) %>%
+  summarize(median_bmd = median(`Best BMD`, na.rm=TRUE))
+
+# 5. Determine tPOD: lowest median BMD across gene sets
+tPOD <- min(median_bmd_per_set$median_bmd)
+
+print(paste("Transcriptomic POD (tPOD) is:", tPOD))
+
+```
+"Transcriptomic POD (tPOD) is: 0.0152065"
+
+
+```{r}
+go_sets <- AnnotationDbi::select(org.Hs.eg.db, keys=DIPA_bmd$'Probe ID',
+                                 columns=c("GO"), keytype="SYMBOL") %>%
+  filter(ONTOLOGY == "BP")  # biological process GO terms
+
+go_bmdhigh <- inner_join(go_sets, DIPA_bmd, by = c("SYMBOL" = "Probe ID"))
+
+gene_set_summaryhigh <- go_bmd %>%
+  group_by(GO) %>%
+  summarize(total_genes = n(),
+            genes_with_bmdhigh = sum(!is.na('Best BMD')),
+            percent_with_bmdhigh = genes_with_bmdhigh / total_genes)
+
+filtered_setshigh <- gene_set_summaryhigh %>%
+  filter(total_genes >= 3, percent_with_bmdhigh >= 0.05) %>%
+  pull(GO)
+
+# 4. Calculate median BMD per filtered gene set
+median_bmd_per_sethigh <- go_bmdhigh %>%
+  filter(GO %in% filtered_setshigh) %>%
+  group_by(GO) %>%
+  summarize(median_bmd = median(`Best BMD`, na.rm=TRUE))
+
+# 5. Determine tPOD: lowest median BMD across gene sets
+tPODhigh <- min(median_bmd_per_sethigh$median_bmd)
+
+print(paste("Transcriptomic POD (tPOD) is:", tPODhigh))
+```
+"Transcriptomic POD (tPOD) is: 0.0277068"
+
+
+## Pathway POD derivation 
+```{r}
+# Original dataframe with IDs to keep track of rows
+ora_low_filtered <- data.frame(
+  ID = 1:3,
+  Genes = c(
+     	"EIF4A2;RPL4;EIF4A1;RPL32;RPL31;RPL8;RPL36;RACK1;RPLP2;RPL15;RPS11;RPL18;RPS27A;ZC3H15;RPS12;RPL21;RPL23;RPS5;RPL22;GTPBP1;RPS25;SARS1;EIF3M;RPL28;RPS21",	
+      "RPL4;MRPS17;MRPS15;RPL32;RPL31;MRPL18;RPL8;MRPL35;MRPL32;RPL36;ST3GAL4;ENPP1;RPLP2;KPNA4;RPL15;RPS11;RPL18;RPS27A;GAL3ST4;RPS12;RPL21;RPL23;RPS5;RPL22;INHBA;EEF2       RPL23;GTPBP1;EXT1;RPS25;SARS1;GOLPH3;NACA;AGO2;RPL28;RPS21;RSL24D1;EIF4G2" ,	
+      "GSK3B;UBXN1;RNF14;UBE2D3;RNF19B;TNFAIP3;UBE2L3;HERPUD1;RPGR;HERC4;PSMD2;PSMD1;UBL7;SKP1;FBXW11;UBE2E1;RC3H1;VPS37A;FBXO10;TRPC4AP;RNF123;PLAA;BIRC2;PSMD11"
+  ),
+  stringsAsFactors = FALSE
+)
+
+# Split each row's Genes column into a list of vectors
+split_genes <- strsplit(ora_low_filtered$Genes, split = ";")
+
+# Create a new dataframe with one row per gene, keeping original row ID
+df_long_manual <- data.frame(
+  ID = rep(ora_low_filtered$ID, times = sapply(split_genes, length)),
+  Gene = unlist(split_genes),
+  stringsAsFactors = FALSE
+)
+
+print(df_long_manual)
+```
+
+```{r}
+bmd_low_selected <- tyrosine_bmd[, c("Best BMD", "Probe ID")]
+
+# Filter bmd_met1_selected to keep only rows where Probe ID matches an ID in df_long_manual
+filtered_bmd <- bmd_low_selected %>%
+  filter(`Probe ID` %in% df_long_manual$Gene)
+
+# View the filtered dataframe
+print(filtered_bmd)
+```
+
+
+```{r}
+# Add Best BMD column to df_long_manual based on matching ID and Probe ID
+df_long_manual_updated <- df_long_manual %>%
+  left_join(bmd_low_selected, by = c("Gene" = "Probe ID"))
+
+# View the updated dataframe
+print(df_long_manual_updated)
+```
+
+```{r}
+# Calculate median Best BMD for each ID
+median_bmd_per_pathway <- df_long_manual_updated %>%
+  group_by(ID) %>%
+  summarise(median_best_bmd = median(`Best BMD`, na.rm = TRUE))
+
+# View the result
+print(median_bmd_per_pathway)
+```
+
+
+```{r}
+
+# Calculate the lowest median and 5th percentile of Best BMD per ID
+summary_stats <- median_bmd_per_pathway %>%
+  summarise(
+    lowest_median = min(median_best_bmd, na.rm = TRUE),
+    fifth_percentile = quantile(median_best_bmd, probs = 0.05, na.rm = TRUE)
+  )
+
+
+# View the final result
+print(summary_stats)
+```
+lowest_median 7.68576           
+
+fifth_percentile 	18.66613	
+
+
+```{r}
+# Original dataframe with IDs to keep track of rows
+ora_high_filtered <- data.frame(
+  ID = 1:12,
+  Genes = c(
+    "ADH1C;ALDH8A1;ADH6" ,
+    "ADH1C;BCO1;ALDH8A1;ADH6" ,
+    "ADH1C;BCO1;UGT2B7;ADH6"
+   
+  ),
+  stringsAsFactors = FALSE
+)
+
+# Split each row's Genes column into a list of vectors
+split_genes_high <- strsplit(ora_high_filtered$Genes, split = ";")
+
+# Create a new dataframe with one row per gene, keeping original row ID
+high_df_long_manual <- data.frame(
+  ID = rep(ora_high_filtered$ID, times = sapply(split_genes_high, length)),
+  Gene = unlist(split_genes_high),
+  stringsAsFactors = FALSE
+)
+
+print(high_df_long_manual)
+```
+```{r}
+bmd_high_selected <- DIPA_bmd[, c("Best BMD", "Probe ID")]
+
+# Filter bmd_met1_selected to keep only rows where Probe ID matches an ID in df_long_manual
+filtered_bmd_high <- bmd_high_selected %>%
+  filter(`Probe ID` %in% high_df_long_manual$Gene)
+
+# View the filtered dataframe
+print(filtered_bmd_high)
+```
+Best BMD 24.9684  92.0217
+
+Probe ID 	ADH6		ALDH8A1
+
+```{r}
+# Add Best BMD column to df_long_manual based on matching ID and Probe ID
+df_long_manual_update_high <- high_df_long_manual %>%
+  left_join(bmd_high_selected, by = c("Gene" = "Probe ID"))
+
+# View the updated dataframe
+print(df_long_manual_update_high)
+```
+```{r}
+# Calculate median Best BMD for each ID
+median_bmd_per_pathway_high <- df_long_manual_update_high %>%
+  group_by(ID) %>%
+  summarise(median_best_bmd = median(`Best BMD`, na.rm = TRUE))
+
+# View the result
+print(median_bmd_per_pathway_high)
+```
+
+
+```{r}
+
+# Calculate the lowest median and 5th percentile of Best BMD per ID
+summary_stats_high <- median_bmd_per_pathway_high %>%
+  summarise(
+    lowest_median = min(median_best_bmd, na.rm = TRUE),
+    fifth_percentile = quantile(median_best_bmd, probs = 0.05, na.rm = TRUE)
+  )
+
+
+# View the final result
+print(summary_stats_high)
+```
+lowest_median 24.9684
+
+fifth_percentile 24.9684
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+# Create data frame
+data <- data.frame(
+  Measure = rep(c("Gene POD", "Pathway POD", "Module POD", "Cmax"), 2),
+  Compound = rep(c("DIPA", "Tyrosine"), each = 4),
+  Value = c(0.00306, 0.01042, 0.15244, 26.52,
+            0.00360, 0.03260, 92.6664, 2.711)
+)
+
+ggplot(data, aes(x = Measure, y = Value, fill = Compound)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.8)) +
+  scale_y_log10(limits = c(1e-4, 1e3),  # adjust based on your data
+                breaks = c(1e-4, 1e-3, 1e-2, 1e-1, 1, 10, 100, 1000)) +
+  labs(title = "Comparison of Cmax and Transcriptomic PODs",
+       y = "Concentration (µM, log scale)",
+       x = NULL) +
+  geom_text(aes(label = signif(Value, 3)),
+            position = position_dodge(width = 0.8),
+            vjust = -0.3, size = 3) +
+  theme_minimal() +
+  theme(legend.position = "top",
+        axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+
+
+```{r session-info}
+devtools::session_info()
+```

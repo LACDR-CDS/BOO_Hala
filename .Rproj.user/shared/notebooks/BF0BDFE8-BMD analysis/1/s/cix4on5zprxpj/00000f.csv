@@ -1,0 +1,8 @@
+"0","bmd_low_selected <- tyrosine_bmd[, c(""Best BMD"", ""Probe ID"")]"
+"0",""
+"0","# Filter bmd_met1_selected to keep only rows where Probe ID matches an ID in df_long_manual"
+"0","filtered_bmd <- bmd_low_selected %>%"
+"0","  filter(`Probe ID` %in% df_long_manual$Gene)"
+"0",""
+"0","# View the filtered dataframe"
+"0","print(filtered_bmd)"

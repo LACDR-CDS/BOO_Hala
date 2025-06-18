@@ -1,0 +1,6 @@
+"0","# Add Best BMD column to df_long_manual based on matching ID and Probe ID"
+"0","df_long_manual_updated <- df_long_manual %>%"
+"0","  left_join(bmd_low_selected, by = c(""Gene"" = ""Probe ID""))"
+"0",""
+"0","# View the updated dataframe"
+"0","print(df_long_manual_updated)"

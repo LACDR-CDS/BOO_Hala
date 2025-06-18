@@ -3,7 +3,7 @@
     "path": "C:/Users/hala2/Universiteit Leiden/BOO 2025 - BOO CDS Giulia team - BOO CDS Giulia team/Students/Hala/Project/Hala-BOO/BMD analysis.Rmd",
     "project_path": "BMD analysis.Rmd",
     "type": "r_markdown",
-    "hash": "782516515",
+    "hash": "0",
     "contents": "",
     "dirty": false,
     "created": 1749714643135.0,
@@ -12,15 +12,15 @@
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "60,0",
-        "scrollLine": "51"
+        "cursorPosition": "81,50",
+        "scrollLine": "73"
     },
     "folds": "",
-    "lastKnownWriteTime": 1749715231,
+    "lastKnownWriteTime": 1750163345,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1749752157625,
+    "last_content_update": 1750163345362,
     "read_only": false,
     "read_only_alternatives": []
 }

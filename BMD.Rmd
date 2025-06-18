@@ -71,6 +71,8 @@ colnames(top_df) <- c("SampleID", metaData$sample_ID)
 log2cpm <- rbind(top_df, log2cpm)
 log2cpm[1:5, 1:5]
 ```
+
+
 ```{r}
   low.bmd <- metaData %>%
     filter(compound_ID == "CS1133") %>%

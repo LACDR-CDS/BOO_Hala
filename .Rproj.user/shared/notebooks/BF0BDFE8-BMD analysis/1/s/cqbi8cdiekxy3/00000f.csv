@@ -1,0 +1,4 @@
+"0","merged_high <- merge(high_module, DIPA_bmd, "
+"0","                   by.x = ""gene_symbol"", "
+"0","                   by.y = ""Probe ID"", "
+"0","                   all = FALSE)  # inner join: only matching rows"

@@ -12,13 +12,13 @@
     "properties": {
         "expression": "bmdhigh_results",
         "caption": "bmdhigh_results",
-        "totalObservations": "8687",
-        "displayedObservations": "8687",
-        "variables": "1",
-        "cacheKey": "2AB63232",
+        "totalObservations": "13123",
+        "displayedObservations": "13123",
+        "variables": "124",
+        "cacheKey": "08F6DB68",
         "object": "bmdhigh_results",
         "environment": "",
-        "contentUrl": "grid_resource/gridviewer.html?env=&obj=bmdhigh_results&cache_key=2AB63232&max_display_columns=50",
+        "contentUrl": "grid_resource/gridviewer.html?env=&obj=bmdhigh_results&cache_key=08F6DB68&max_display_columns=50",
         "preview": "0",
         "source_window_id": "",
         "Source": "Source"

@@ -1,0 +1,7 @@
+"0","# Calculate median Best BMD for each ID"
+"0","median_bmd_per_pathway <- df_long_manual_updated %>%"
+"0","  group_by(ID) %>%"
+"0","  summarise(median_best_bmd = median(`Best BMD`, na.rm = TRUE))"
+"0",""
+"0","# View the result"
+"0","print(median_bmd_per_pathway)"
